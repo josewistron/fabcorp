@@ -123,13 +123,13 @@ def get_server_data():
         
         for location_id, unit in loc_data.items():
 
-            rack = unit.get("Rack", "")
+            rack = str(unit.get("Rack", "")).strip().upper()
 
             if rack not in valid_racks:
                 continue
 
             # =========================
-            # TAG EXTRACTION
+            # TAGS
             # =========================
 
             loc_info = location_info.get(location_id, {})
@@ -149,6 +149,37 @@ def get_server_data():
             ]
 
             tags_text_str = ", ".join(tags_text)
+
+            # =========================
+            # EXPECTED OUTPUT
+            # =========================
+
+            calc = calculate_expected_output(
+                unit.get("StartTime", ""),
+                unit.get("StageDisplay", "")
+            )
+
+            expected_output = None
+            time_remaining = None
+
+            if calc:
+                expected_output = calc["expected_output"]
+
+                try:
+                    now = datetime.now()
+
+                    output_time = datetime.strptime(expected_output, "%H:%M")
+                    output_time = datetime.combine(now.date(), output_time.time())
+
+                    if output_time < now:
+                        output_time += timedelta(days=1)
+
+                    time_remaining = round(
+                        (output_time - now).total_seconds() / 3600,
+                        2
+                    )
+                except:
+                    time_remaining = None
 
             # =========================
             # RECORD
@@ -173,9 +204,14 @@ def get_server_data():
                 "ErrorCode": unit.get("ErrorCode", ""),
                 "ErrorDescription": unit.get("ErrorDescription", ""),
                 "WaitingTime": 0,
+
+                # NUEVO
+                "ExpectedOutput": expected_output,
+                "TimeRemaining": time_remaining
             }
 
             records.append(record)
+            
 
         df = pd.DataFrame(records)
 

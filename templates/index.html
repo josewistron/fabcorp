@@ -5,4 +5,62 @@
 <h2>Dashboard Home</h2>
 <p>Welcome to MFTE system</p>
 
+<!-- SMALL OVERVIEW BOX -->
+<div class="card shadow-sm"
+     style="
+        width: 420px;
+        border-radius:12px;
+        border:1px solid #e5e7eb;
+        background:#ffffff;
+     ">
+
+   <div class="card-body" style="padding:12px;">
+
+      <!-- HEADER -->
+       <a target="_blank" href="/rack-monitor">
+      <div class="mb-2">
+         <h6 class="fw-bold mb-0">
+
+            <i data-lucide="server"></i>
+            Rack Overview
+         </h6>
+      </div>
+      </a>
+
+      <!-- 2 COLUMNS SMALL -->
+      <div class="row g-2">
+
+         {% for key, value in config_counts.items() %}
+
+         <div class="col-6">
+
+            <div style="
+               display:flex;
+               justify-content:space-between;
+               align-items:center;
+               padding:5px 8px;
+               border-radius:6px;
+               background:
+               {% if value == 0 %}#e5e7eb{% else %}#0d6efd{% endif %};
+               color:
+               {% if value == 0 %}#374151{% else %}#fff{% endif %};
+               font-size:10px;
+               font-weight:600;
+            ">
+
+               <span>{{ key }}</span>
+               <span>{{ value }}</span>
+
+            </div>
+
+         </div>
+
+         {% endfor %}
+
+      </div>
+
+   </div>
+
+</div>
+
 {% endblock %}

@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid" style="background:#f0f2f5; padding:20px;">
+   <!-- HEADER -->
+   <div class="mb-3">
+      <h3 class="fw-bold text-primary">
+         <i data-lucide="server"></i>
+         Server Rack Monitor
+      </h3>
+   </div>
+   <!-- CONFIG BADGES -->
+   <div class="mb-3 d-flex gap-2" id="config-badges">
+      {% for key, value in config_counts.items() %}
+      <span class="badge"
+         style="
+         background-color: {% if value == 0 %}#d1d5db{% else %}#0d6efd{% endif %};
+         color: {% if value == 0 %}#374151{% else %}#fff{% endif %};
+         ">
+      {{ key }}: {{ value }}
+      </span>
+      {% endfor %}
+   </div>
+   <!-- FILTERS -->
+   <div class="card mb-4 shadow-sm">
+      <div class="card-header bg-white">
+         <b>
+         <i data-lucide="filter"></i>
+         Filters
+         </b>
+      </div>
+      <div class="card-body">
+         <div class="row">
+            <!-- RACK FILTER -->
+            <div class="col-md-6 mb-3">
+   <label class="fw-bold mb-2">
+      <i data-lucide="network"></i>
+      Racks / Bays
+   </label>
+
+   <select class="form-select" id="rack-filter">
+      <option value="">All</option>
+
+      {% for b in bay_options %}
+      <option value="{{ b }}">{{ b }}</option>
+      {% endfor %}
+
+      {% for r in rack_numbers %}
+      <option value="{{ r }}">Rack {{ r }}</option>
+      {% endfor %}
+
+   </select>
+</div>
+            <!-- CONFIG FILTER -->
+            <div class="col-md-6">
+               <label class="fw-bold mb-2">
+               <i data-lucide="settings"></i>
+               Configurations
+               </label>
+               <select class="form-select" id="config-filter" >
+                  <option>Config 1</option>
+                  <option>Config 2</option>
+                  <option>Config 3</option>
+                  <option>Config 4</option>
+                  <option>Config 6</option>
+                  <option>Config B1</option>
+                  <option>Config F1</option>
+               </select>
+            </div>
+         </div>
+      </div>
+   </div>
+   <!-- SUMMARY TABLE -->
+   <div class="card shadow-sm mb-3">
+      <!-- HEADER -->
+      <div class="card-header bg-white d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse"
+         data-bs-target="#summaryCollapse"
+         style="cursor:pointer;">
+         <b>📊 Output Summary</b>
+         <i id="toggleIcon" data-lucide="minus" width="18"></i>
+      </div>
+      <!-- BODY -->
+      <div id="summaryCollapse" class="collapse show">
+         <div class="card-body p-0">
+            <div id="output-summary-table">
+               <table class="table table-sm table-bordered align-middle mb-0">
+                  <thead class="table-light">
+                     <tr>
+                        <th>Time Window</th>
+                        <th>Total</th>
+                        <th>By Configuration</th>
+                        <th class="text-end">Output Time Range</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {% for row in summary_data %}
+                     <tr>
+                        <td>
+                           <span class="badge bg-secondary">
+                           {{ row.window }}
+                           </span>
+                        </td>
+                        <td>
+                           <b class="text-primary">
+                           {{ row.total }} units
+                           </b>
+                        </td>
+                        <td>
+                           {% for cfg, count in row.configs.items() %}
+                           <span class="badge bg-info text-dark">
+                           {{ cfg }}: {{ count }}
+                           </span>
+                           {% endfor %}
+                        </td>
+                        <td class="text-end">
+                           {% if row.times|length > 1 %}
+                           {{ row.times|min }} - {{ row.times|max }}
+                           {% else %}
+                           {{ row.times[0] }}
+                           {% endif %}
+                        </td>
+                     </tr>
+                     {% endfor %}
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      </div>
+   </div>
+   <!-- ===================================================== -->
+   <!-- UNIT DISPLAY (UI IMPROVEMENT ONLY) -->
+   <!-- ===================================================== -->
+   <div class="card shadow-sm mb-3">
+
+   <!-- HEADER CON BOTÓN MINIMIZAR -->
+   <div class="card-header bg-white d-flex justify-content-between align-items-center">
+
+      <b>
+         <i data-lucide="layout-grid"></i>
+         Unit Cards (sorted by waiting time)
+      </b>
+
+      <button class="btn btn-sm btn-light"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#unitCardsCollapse"
+              aria-expanded="true">
+
+         <i id="cardtoggleIcon" data-lucide="minus" width="18"></i>
+      </button>
+
+   </div>
+
+   <!-- CONTENIDO COLAPSABLE -->
+   <div id="unitCardsCollapse" class="collapse show">
+
+      <div class="card-body" style="background:#f8f9fa;">
+
+         <div style="
+            display:grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap:14px;
+         ">
+
+            {% for rack_number in range(1, 55) %}
+
+            <div class="card shadow-sm" style="border-radius:14px; overflow:hidden;">
+
+               <div class="card-header bg-light py-1 text-center">
+                  <b>Rack {{ rack_number }}</b>
+               </div>
+
+               <div class="p-2">
+
+                  {% for unit in bay_view[rack_number] %}
+                  {% set status = unit["TestStatus"] %}
+                  {% set expected = unit.get("ExpectedOutput") %}
+                  {% set remaining = unit.get("TimeRemaining") %}
+
+                  <!-- UNIT CARD -->
+                  <div class="mb-2 p-2 shadow-sm"
+                       style="
+                       border-radius:12px;
+                       font-size:11px;
+
+                       background:
+                       {% if status == 'Testing' %} #e7f1ff
+                       {% elif status == 'Failed' %} #ffe7e7
+                       {% elif status == 'Passed' %} #e7f8ed
+                       {% else %} #f2f2f2
+                       {% endif %};
+
+                       border-left:5px solid
+                       {% if status == 'Testing' %} #0d6efd
+                       {% elif status == 'Failed' %} #dc3545
+                       {% elif status == 'Passed' %} #198754
+                       {% else %} #6c757d
+                       {% endif %};
+                       ">
+
+                     {% if unit.get("Tags") %}
+                     <div style="
+                        color:black;
+                        font-weight:bold;
+                        padding:2px 6px;
+                        border-radius:4px;
+                        background-color:#fbff00;
+                        display:inline-block;
+                        margin-top:4px;
+                        font-size:10px;
+                     ">
+                        Tag: {{ unit["Tags"] }}
+                     </div>
+                     {% endif %}
+
+                     <div style="font-weight:800; font-size:12px;">
+                        {{ unit["SerialNumber"] }}
+                     </div>
+
+                     <div style="font-weight:600;">
+                        {% if status == "Testing" %}
+                           <span class="text-primary">● Testing</span>
+                        {% elif status == "Failed" %}
+                           <span class="text-danger">● Failed</span>
+                        {% elif status == "Passed" %}
+                           <span class="text-success">● Passed</span>
+                        {% else %}
+                           <span class="text-secondary">● {{ status }}</span>
+                        {% endif %}
+                     </div>
+
+                     <hr class="my-1">
+
+                     <div><b>Stage:</b> {{ unit["Stage"] }}</div>
+                     <div><b>Config:</b> {{ unit.get("ProductName", "N/A") }}</div>
+                     <div><b>Location:</b> POD-{{ unit["Bay"] }}-{{ unit["Slot"] }}</div>
+
+                     <div><b>Start:</b> {{ unit["StartTime"] }}</div>
+
+                     {% if expected %}
+                        <div>
+                           <b>Est Out:</b> {{ expected }}
+                        </div>
+
+                        {% if status == "Testing" and remaining %}
+                        <div style="font-size:10px; font-style:italic; color:#374151;">
+                           ⏱ {{ remaining }} left
+                        </div>
+                        {% endif %}
+                     {% else %}
+                        <div><b>Est Out:</b> --</div>
+                     {% endif %}
+
+                     {% if status == "Failed" and unit.get("ErrorCode") %}
+                     <div style="
+                        margin-top:4px;
+                        font-size:10px;
+                        font-weight:600;
+                        color:#dc2626;
+                        background:#fee2e2;
+                        padding:3px 6px;
+                        border-radius:6px;
+                     ">
+                        ⚠ {{ unit["ErrorCode"] }}
+                     </div>
+                     {% endif %}
+
+                  </div>
+
+                  {% endfor %}
+
+               </div>
+            </div>
+
+            {% endfor %}
+
+         </div>
+
+      </div>
+
+   </div>
+</div>
+</div>
+</div>
+<!-- AUTO REFRESH (equivalente a dcc.Interval) -->
+<script>
+   setInterval(() => {
+       // luego lo conectamos a Flask API
+       console.log("refresh rack data...");
+   }, 30000);
+   
+   lucide.createIcons();
+</script>
+<script>
+   document.addEventListener("DOMContentLoaded", function () {
+   
+       const collapse = document.getElementById("summaryCollapse");
+       
+       const icon = document.getElementById("toggleIcon");
+   
+       collapse.addEventListener("show.bs.collapse", function () {
+           icon.setAttribute("data-lucide", "minus");
+           lucide.createIcons();
+       });
+   
+       collapse.addEventListener("hide.bs.collapse", function () {
+           icon.setAttribute("data-lucide", "plus");
+           lucide.createIcons();
+       });
+   
+   });
+   document.addEventListener("DOMContentLoaded", function () {
+
+    const cards_collapse = document.getElementById("unitCardsCollapse");
+    const card_icon = document.getElementById("cardtoggleIcon");
+
+    cards_collapse.addEventListener("show.bs.collapse", function () {
+        card_icon.setAttribute("data-lucide", "minus");
+        lucide.createIcons();
+    });
+
+    cards_collapse.addEventListener("hide.bs.collapse", function () {
+        card_icon.setAttribute("data-lucide", "plus");
+        lucide.createIcons();
+    });
+
+});
+</script>
+{% endblock %}
