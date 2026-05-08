@@ -3,7 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 from werkzeug.security import check_password_hash
 from sqlalchemy.orm import contains_eager
-from rack_monitor import get_server_data
+from sqlalchemy import or_
+
+
+from controllers.rack_monitor import get_server_data
+from controllers.user import get_all_users, toggle_user_status, create_user
+
 
 import io
 from models import db, User
@@ -81,7 +86,13 @@ def index():
     if "user_id" not in session:
         return redirect("/")
 
-    return render_template("index.html", name=session["user_name"])
+    data = get_server_data()  # 👈 reutilizas lo mismo del rack monitor
+
+    return render_template(
+        "index.html",
+        name=session["user_name"],
+        config_counts=data.get("configs", {})
+    )
 
 @app.route("/logout")
 def logout():
@@ -99,7 +110,7 @@ def rack_monitor():
     rack_numbers = list(range(1, 11))
 
     return render_template(
-    "rack_monitor.html",
+    "rack_monitor/rack_monitor.html",
     bay_options=bay_options,
     rack_numbers=rack_numbers,
     rack_data=data["data"],
@@ -115,6 +126,86 @@ def rack_debug():
     data = get_server_data()
 
     return jsonify(data)
+
+
+def clean(value):
+    return value if value and value.strip() else None
+
+
+@app.route("/users")
+@login_required
+def users():
+
+    search = clean(request.args.get("search"))
+    department = clean(request.args.get("department"))
+    shift = clean(request.args.get("shift"))
+    role = clean(request.args.get("role"))
+    status = clean(request.args.get("status"))
+
+    query = User.query
+
+    if search:
+        query = query.filter(
+            or_(
+                User.employee_number.ilike(f"%{search}%"),
+                User.full_name.ilike(f"%{search}%")
+            )
+        )
+
+    if department:
+        query = query.filter(User.department == department)
+
+    if shift:
+        query = query.filter(User.shift == shift)
+
+    if role:
+        query = query.filter(User.role == role)
+
+    if status:
+        query = query.filter(User.status == status)
+
+    users = query.order_by(User.id.desc()).all()
+
+    return render_template("users/users.html", users=users)
+
+
+@app.route("/users/create", methods=["POST"])
+@login_required
+def create_user_route():
+
+    data = request.form.to_dict()
+    create_user(data)
+
+    return redirect("/users")
+
+
+@app.route("/users/toggle/<int:user_id>", methods=["POST"])
+@login_required
+def toggle_user(user_id):
+
+    toggle_user_status(user_id)
+    return redirect("/users")
+
+@app.route("/users/create", methods=["POST"])
+@login_required
+def users_create():
+
+    data = request.form.to_dict()
+
+    create_user(data)
+
+    return redirect("/users")
+
+@app.route("/wip/<module>")
+@login_required
+def wip(module):
+
+    return render_template(
+        "maintenance.html",
+        module=module
+    )
+
+
 # RUN SERVER
 # =========================
 if __name__ == "__main__":
