@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from sqlalchemy import UniqueConstraint
 
 db = SQLAlchemy()
 
@@ -22,3 +23,32 @@ class User(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class SlotRepair(db.Model):
+    __tablename__ = 'slot_repairs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    location = db.Column(db.String(50), nullable=False)
+    error_code = db.Column(db.String(100), nullable=True)
+    comment = db.Column(db.Text, nullable=False)
+    # Si quieres relacionarlo formalmente con User, podrías usar un ForeignKey aquí
+    technician_id = db.Column(db.String(50), nullable=True)
+    repair_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PingFailure(db.Model):
+    __tablename__ = 'ping_failures'
+
+    id = db.Column(db.Integer, primary_key=True)
+    model_name = db.Column(db.String(100), nullable=True)
+    product_name = db.Column(db.String(100), nullable=True)
+    serial_number = db.Column(db.String(50), nullable=True)
+    location = db.Column(db.String(150), nullable=True)
+    start_time = db.Column(db.DateTime, nullable=True)
+    end_time = db.Column(db.DateTime, nullable=True)
+    error_code = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Definición de la restricción UNIQUE compuesta (serial_number, start_time)
+    __table_args__ = (
+        UniqueConstraint('serial_number', 'start_time', name='unique_serial_start'),
+    )

@@ -1,0 +1,677 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header text-center mb-4 mt-2">
+    <h2 class="h3 mb-1 fw-bold" style="color: #1a174d;">{{ error_type }}</h2>
+    <p class="text-muted small"></p>
+</div>
+
+{% include "filter_button.html" with context %}
+
+<div class="matrix-wrapper card border-0">
+    {# Definimos el orden de las letras una sola vez #}
+    {% set slots_rev = "WVUTSRQPONMLKJIHGFEDCBA" | list %}
+    <div class="px-3 pt-2">
+		<a href="javascript:history.back()" class="btn btn-outline-info btn-xs" style="text-decoration: none; font-size: 0.7rem; padding: 2px 8px; margin-bottom: 15px;">⬅ Back to Home</a>
+	</div>
+
+    <div class="pod-container">
+        <div class="pod-header" onclick="togglePod('pod1-body')">
+            <span> POD </span>
+            <span class="badge bg-light text-dark rounded-pill">{{ data.detalles.POD.total if data.detalles.POD else 0 }}</span>
+        </div>
+        <div id="pod1-body" class="pod-body">
+            <div class="matrix-flex-container">
+                {% for r_num in range(1, 37) %}
+                    {% set rack_key = "Rack_" ~ r_num %}
+                    {% set current_rack = racks.get(rack_key, {}) %}
+
+                    <div class="rack-column">
+                        <div class="rack-header-yield">
+							<div class="rack-header">{{ r_num }}</div>
+							<div class="yield-badge" style="margin-top: 2px;">
+								{% if current_rack.yield is defined %}
+									<span class="{{ 'text-success' if current_rack.yield >= 95 else 'text-warning' if current_rack.yield >= 85 else 'text-danger' }}"
+										style="background-color: white; 
+												padding: 1px 4px; 
+												border-radius: 4px; 
+												font-size: 0.55rem; 
+												font-weight: bold; 
+												display: inline-block;
+												box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+										{{ current_rack.yield }}%
+									</span>
+								{% else %}
+									<span class="text-muted" style="background-color: rgba(255,255,255,0.8); padding: 1px 4px; border-radius: 4px; font-size: 0.65rem;">
+										N/A
+									</span>
+								{% endif %}
+							</div>
+						</div>
+                        
+                        {% for s in slots_rev %}
+							{% set found_count = current_rack.get('slots', {}).get(s, 0) %}
+							
+							{# --- LIMPIEZA ROBUSTA --- #}
+							{# 1. Convertimos a string y quitamos el % y todo lo que siga #}
+							{% set r_num_clean = (r_num|string).split()[0]|trim %}
+							
+							{# 2. Armamos la locación en una sola línea para evitar espacios accidentales #}
+							{% set current_loc = "R:POD" ~ " B:" ~ r_num_clean ~ " S:" ~ s %}
+							
+							<div class="slot-cell {{ 'has-fail' if found_count > 0 else 'is-ok' }}" 
+								onclick="fetchSlotData('{{ current_loc }}')">
+								
+								<span class="slot-name">{{ s }}</span>
+								
+								<div class="status-wrapper">
+									<span class="status-dot {{ 'dot-fail' if found_count > 0 else 'dot-ok' }}"></span>
+									<span class="status-text">
+										{{ found_count if found_count > 0 else 'ok' }}
+									</span>
+								</div>
+
+								{# --- EL ICONO DEL CHAT --- #}
+								{# Verificamos si la locación limpia está en la lista que mandó Flask #}
+								{% if current_loc in repaired_slots %}
+									<div class="comment-indicator" style="position: absolute; top: 2px; right: 2px; z-index: 10;">
+										<i class="bi bi-chat-dots-fill text-primary" style="font-size: 0.75rem; filter: drop-shadow(0px 0px 1px white);"></i>
+									</div>
+								{% endif %}
+							</div>
+						{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="pod-container mt-4">
+        <div class="pod-header" onclick="togglePod('pod2-body')">
+            <span> POD2  </span>
+            <span class="badge bg-light text-dark rounded-pill">{{ data.detalles.POD2.total if data.detalles.POD2 else 0 }}</span>
+        </div>
+        <div id="pod2-body" class="pod-body">
+            <div class="matrix-flex-container">
+                {# Rango para POD 2: del 37 al 54 inclusive #}
+                {% for r_num in range(37, 55) %}
+                    {% set rack_key = "Rack_" ~ r_num %}
+                    {% set current_rack = racks.get(rack_key, {}) %}
+
+                    <div class="rack-column">
+                        <div class="rack-header-yield">
+							<div class="rack-header">{{ r_num }}</div>
+							<div class="yield-badge" style="margin-top: 2px;">
+								{% if current_rack.yield is defined %}
+									<span class="{{ 'text-success' if current_rack.yield >= 95 else 'text-warning' if current_rack.yield >= 85 else 'text-danger' }}"
+										style="background-color: white; 
+												padding: 1px 4px; 
+												border-radius: 4px; 
+												font-size: 0.55rem; 
+												font-weight: bold; 
+												display: inline-block;
+												box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+										{{ current_rack.yield }}%
+									</span>
+								{% else %}
+									<span class="text-muted" style="background-color: rgba(255,255,255,0.8); padding: 1px 4px; border-radius: 4px; font-size: 0.65rem;">
+										N/A
+									</span>
+								{% endif %}
+							</div>
+						</div>
+                        
+						{% for s in slots_rev %}
+							{% set found_count = current_rack.get('slots', {}).get(s, 0) %}
+							
+							{# --- LIMPIEZA ROBUSTA --- #}
+							{% set r_num_clean = (r_num|string).split()[0]|trim %}
+							
+							{# 2. Armamos la locación en una sola línea para evitar espacios accidentales #}
+							{% set current_loc = "R:POD2" ~ " B:" ~ r_num_clean ~ " S:" ~ s %}
+							
+							<div class="slot-cell {{ 'has-fail' if found_count > 0 else 'is-ok' }}" 
+								onclick="fetchSlotData('{{ current_loc }}')">
+								
+								<span class="slot-name">{{ s }}</span>
+								
+								<div class="status-wrapper">
+									<span class="status-dot {{ 'dot-fail' if found_count > 0 else 'dot-ok' }}"></span>
+									<span class="status-text">
+										{{ found_count if found_count > 0 else 'ok' }}
+									</span>
+								</div>
+
+								{# --- EL ICONO DEL CHAT --- #}
+								{% if current_loc in repaired_slots %}
+									<div class="comment-indicator" style="position: absolute; top: 2px; right: 2px; z-index: 10;">
+										<i class="bi bi-chat-dots-fill text-primary" style="font-size: 0.75rem; filter: drop-shadow(0px 0px 1px white);"></i>
+									</div>
+								{% endif %}
+							</div>
+						{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="slotDetailsModal" tabindex="-1" aria-labelledby="slotDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered"> <div class="modal-content">
+            <div class="modal-header" style="background-color: #f8f9fa;">
+                <h5 class="modal-title fw-bold" id="slotDetailsModalLabel" style="color: #1a174d;">
+                    Stage Details: <span id="modalSlotTitle" class="text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+				<ul class="nav nav-tabs mb-3" id="modalDetailTabs" role="tablist">
+					<li class="nav-item">
+						<a class="nav-link active" id="units-tab" data-toggle="tab" href="#unitsContent" role="tab">
+							<i class="fas fa-microchip mr-1"></i> Units
+						</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="comments-tab" data-toggle="tab" href="#commentsContent" role="tab" onclick="fetchRepairComments()">
+							<i class="fas fa-comment-dots mr-1"></i> Repair History
+						</a>
+					</li>
+				</ul>
+
+				<div class="tab-content" id="modalDetailTabsContent">
+					<div class="tab-pane fade show active" id="unitsContent" role="tabpanel">
+						<div class="table-responsive">
+							<table class="table table-sm table-hover w-100" style="font-size: 0.85rem;">
+								<thead class="bg-light">
+									<tr>
+										<th>PRODUCT</th>
+										<th>SERIAL</th>
+										<th>LOCATION</th>
+										<th>START TIME</th>
+										<th>END TIME</th>
+										<th>ERROR</th>
+									</tr>
+								</thead>
+								<tbody id="slotDetailsTableBody">
+									</tbody>
+							</table>
+						</div>
+					</div>
+
+					<div class="tab-pane fade" id="commentsContent" role="tabpanel">
+						<div class="bg-light p-3 rounded border mb-4">
+							<h6 class="font-weight-bold text-primary mb-3">Log New Repair Action</h6>
+							<div class="form-row">
+								<div class="form-group col-md-6">
+									<label class="small font-weight-bold">Employee number:</label>
+									<input type="text" id="techId" class="form-control form-control-sm" placeholder="ID (e.g. ML12345678)">
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="small font-weight-bold">Action Taken:</label>
+								<textarea id="repairComment" class="form-control form-control-sm" rows="2" style="resize: none;" placeholder="What was fixed?"></textarea>
+							</div>
+							<button type="button" class="btn btn-primary btn-sm btn-block" onclick="submitRepair()">
+								Save Repair & Mark as Resolved
+							</button>
+						</div>
+
+						<h6 class="font-weight-bold text-secondary border-bottom pb-2">Recent Logs</h6>
+						<div id="repairLogsContainer" style="max-height: 250px; overflow-y: auto;">
+							<p class="text-center text-muted small py-3">Loading history...</p>
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+	// Guardamos las fechas que Flask ya calculó o recibió
+    const currentPeriod = "{{ filtros.periodo }}";
+    const currentStart = "{{ filtros.start }}";
+    const currentEnd = "{{ filtros.end }}";
+
+    // Función para colapsar los PODs en la vista de matriz
+    function togglePod(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "none") ? "block" : "none";
+    }
+
+	// Agregar evento de clic a todos los slots
+	document.querySelectorAll('.slot-cell').forEach(cell => {
+		cell.addEventListener('click', function() {
+			// 1. Obtener los pedacitos de texto y limpiarlos de espacios en blanco
+			const slotLetter = this.querySelector('.slot-name').innerText.trim();
+			const bayNumber = this.closest('.rack-column').querySelector('.rack-header').innerText.trim();
+			const podName = this.closest('.pod-container').querySelector('.pod-header span').innerText.trim();
+			
+			// 2. Armar el string EXACTAMENTE con el formato de tu base de datos
+			// Resultado esperado: "R:POD2 B:37 S:O"
+			const fullLocation = `R:${podName} B:${bayNumber} S:${slotLetter}`;
+
+			const rackMatch = fullLocation.match(/R:[\w\s]+B:\d+/); // Busca el Rack y Bahía
+			const slotMatch = fullLocation.match(/S:[A-Z]/); //busca slot
+			
+			//Limpiar ubi
+			let cleanLocation = "";
+			if (rackMatch && slotMatch) {
+				cleanLocation = `${rackMatch[0]} ${slotMatch[0]}`;
+			} else {
+				// Fallback: si la regex falla, intentamos limpiar quitando el porcentaje y símbolos
+				cleanLocation = fullLocation.replace(/[\d.]+%/, '').replace(/\s+/g, ' ').trim();
+			}
+			// ----------------------------------
+
+			// 3. Cambiar el título del Modal para saber qué estamos viendo
+			document.getElementById('modalSlotTitle').innerText = cleanLocation;
+
+			// 4. Mostrar el Modal
+			const modalElement = document.getElementById('slotDetailsModal');
+			const detailsModal = new bootstrap.Modal(modalElement);
+			detailsModal.show();
+
+			// 5. Llamar a la función que va a Flask
+			fetchSlotData(fullLocation);
+		});
+	});
+
+	// Función para cargar los datos en la tabla conectándose a PostgreSQL
+	function fetchSlotData(location) {
+		const tbody = document.getElementById('slotDetailsTableBody');
+
+		const rackMatch = location.match(/R:[\w\s]+B:\d+/); // Busca el Rack y Bahía
+        const slotMatch = location.match(/S:[A-Z]/); //busca slot
+		
+		//Limpiar ubi
+		let cleanLocation = "";
+		if (rackMatch && slotMatch) {
+			cleanLocation = `${rackMatch[0]} ${slotMatch[0]}`;
+		} else {
+			// Fallback: si la regex falla, intentamos limpiar quitando el porcentaje y símbolos
+			cleanLocation = location.replace(/[\d.]+%/, '').replace(/\s+/g, ' ').trim();
+		}
+		// ----------------------------------
+
+		// Tomamos el error_type directamente desde Jinja para armar la URL
+		const currentErrorType = "{{ error_type }}"; 
+		
+		tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted my-3">Consultando base de datos...</td></tr>';
+
+		// Armamos la URL con el error y la ubicación exacta
+		const fetchUrl = `/failures/${encodeURIComponent(currentErrorType)}/get_slot_details/${encodeURIComponent(cleanLocation)}` + 
+                         `?periodo=${currentPeriod}&start_custom=${encodeURIComponent(currentStart)}&end_custom=${encodeURIComponent(currentEnd)}`;
+		// console.log("🔍 Consultando:", cleanLocation);
+		// console.log(location)
+		fetch(fetchUrl)
+			.then(response => {
+				if (!response.ok) throw new Error("Error en la respuesta del servidor");
+				return response.json();
+			})
+			.then(data => {
+				tbody.innerHTML = '';
+
+				if (data.error) {
+					tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error fetching data from database.</td></tr>';
+					return;
+				}
+
+				if (data.length === 0) {
+					tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No units found with this error in this location.</td></tr>';
+					return;
+				}
+
+				data.forEach(row => {
+					const tr = document.createElement('tr');
+					tr.innerHTML = `
+						<td class="text-secondary fw-semibold">${row.product || 'N/A'}</td>
+						<td class="text-secondary">${row.sn || 'N/A'}</td>
+						<td class="text-secondary">${row.loc || 'N/A'}</td>
+						<td class="text-secondary">${row.start}</td>
+						<td class="text-secondary">${row.end}</td>
+						<td>
+							<span class="badge rounded-pill border border-secondary text-secondary">
+								${row.error || 'Unknown'}
+							</span>
+						</td>
+					`;
+					tbody.appendChild(tr);
+				});
+			})
+			.catch(error => {
+				console.error("Error de Fetch:", error);
+				tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger small">Error: Failed to connect to database.</td></tr>';
+			});
+	}
+
+    // 2. Evitar que el menú se cierre al seleccionar checkboxes
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation(); // Esto detiene el cierre automático
+        });
+    });
+
+    // 3. Lógica del botón APPLY
+    document.querySelector('.filter_apply_btn').addEventListener('click', function() {
+		// 1. Obtenemos checkboxes marcados diferenciando niveles
+		// Seleccionamos solo los que tienen data-slot (Nivel más bajo)
+		const selectedSlots = Array.from(document.querySelectorAll('#Rack-selector input[data-slot]:checked'));
+		
+		// Seleccionamos racks que NO tienen slots marcados (para casos donde quieras el rack entero sin filtrar slots)
+		// Filtramos para que solo cuente como "Rack Completo" si no hay slots específicos siendo filtrados en el mapa.
+		const selectedBaysOnly = Array.from(document.querySelectorAll('#Rack-selector input[data-bay]:not([data-slot]):checked'));
+		
+		const columns = document.querySelectorAll('.rack-column');
+		
+		
+		if (selectedSlots.length === 0 && selectedBaysOnly.length === 0) {
+			columns.forEach(col => {
+				col.style.display = "block";
+				col.querySelectorAll('.slot-cell').forEach(slot => slot.style.display = "flex");
+			});
+			return;
+		}
+
+		// 2. Construimos el mapa de filtros específicos
+		const filterMap = {};
+		selectedSlots.forEach(cb => {
+			const bay = cb.dataset.bay;
+			const slot = cb.dataset.slot;
+			
+			if (!filterMap[bay]) filterMap[bay] = new Set();
+			filterMap[bay].add(slot);
+		});
+
+		columns.forEach(col => {
+			const colNumber = col.querySelector('.rack-header').innerText.trim();
+			const hasSpecificSlots = filterMap.hasOwnProperty(colNumber);
+			
+			// IMPORTANTE: Si el rack tiene slots específicos en el mapa, 
+			// ignoramos si el checkbox del rack padre está marcado o no.
+			if (hasSpecificSlots) {
+				col.style.display = "block";
+				col.querySelectorAll('.slot-cell').forEach(cell => {
+					const slotLetter = cell.querySelector('.slot-name').innerText.trim();
+					// Solo mostrar si la letra está en el set de ese rack
+					cell.style.display = filterMap[colNumber].has(slotLetter) ? "flex" : "none";
+				});
+			} 
+			// Si no tiene slots específicos pero el rack padre está marcado 
+			// (y no es porque un hijo lo activó), lo mostramos todo.
+			else if (selectedBaysOnly.some(cb => cb.dataset.bay === colNumber)) {
+				col.style.display = "block";
+				col.querySelectorAll('.slot-cell').forEach(cell => cell.style.display = "flex");
+			}
+			else {
+				col.style.display = "none";
+			}
+		});
+	});
+
+    // 4. Lógica tipo "Acordeón" para cerrar submenús hermanos
+    const dropendToggles = document.querySelectorAll('.dropend .dropdown-toggle');
+
+    dropendToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            // Encontramos el elemento <li> padre y el <ul> contenedor
+            const parentLi = this.parentElement; 
+            const parentUl = parentLi.parentElement; 
+
+            // Recorremos todos los elementos hermanos al mismo nivel
+            Array.from(parentUl.children).forEach(siblingLi => {
+                // Si el hermano es un menú desplegable y NO es el que acabamos de clickear
+                if (siblingLi.classList.contains('dropend') && siblingLi !== parentLi) {
+                    
+                    const siblingToggle = siblingLi.querySelector('.dropdown-toggle');
+                    const siblingMenu = siblingLi.querySelector('.dropdown-menu');
+
+                    // Le quitamos las clases 'show' para cerrarlos
+                    if (siblingToggle && siblingMenu) {
+                        siblingToggle.classList.remove('show');
+                        siblingToggle.setAttribute('aria-expanded', 'false');
+                        siblingMenu.classList.remove('show');
+                    }
+                }
+            });
+        });
+    });
+
+    // 5. Sincronizar inputs ocultos/visibles y manejar la jerarquía (Cascada y Burbuja)
+    document.querySelectorAll('.opt-select').forEach(item => {
+        item.addEventListener('click', function(e) {
+            
+            // 1. Evitar comportamientos por defecto que rompen la lógica
+            if (this.tagName === 'BUTTON' && e.target.tagName !== 'INPUT') {
+                e.preventDefault(); // Evitar que el form se recargue
+            }
+            if (e.target.tagName === 'LABEL') {
+                e.preventDefault(); // Evitar el doble clic nativo del HTML
+            }
+
+            // 2. Identificar los checkboxes de esta opción
+            const inputOculto = this.querySelector('input[hidden]');
+            const inputVisible = this.querySelector('input:not([hidden])') || this.querySelector('input');
+            if (!inputVisible) return;
+
+            // 3. Aplicar el nuevo estado localmente (sin desincronizar)
+            let isChecked;
+            if (e.target.tagName === 'INPUT') {
+                // Si atinó directo al cuadrito, tomamos su valor nativo
+                isChecked = e.target.checked;
+            } else {
+                // Si dio clic en el botón o label, lo invertimos manualmente
+                isChecked = !inputVisible.checked;
+                inputVisible.checked = isChecked;
+            }
+            if (inputOculto) inputOculto.checked = isChecked;
+
+            // --- 4. EFECTO CASCADA (Hacia abajo) ---
+            if (inputVisible.id && inputVisible.id.includes('All--')) {
+                // "Select All": Selecciona TODO dentro de su propio contenedor
+                let ulParent = this.closest('ul.dropdown-menu');
+                if (ulParent) {
+                    ulParent.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
+                }
+            } else {
+                // Botón normal: Usa :scope para afectar SOLO a su submenú directo (si tiene uno)
+                let miLi = this.closest('li');
+                let subMenu = miLi ? miLi.querySelector(':scope > ul.dropdown-menu') : null;
+                if (subMenu) {
+                    subMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
+                }
+            }
+
+            // --- 5. EFECTO BURBUJA (Hacia arriba) ---
+            let currentUl = this.closest('ul.dropdown-menu');
+            while (currentUl) {
+                // Seleccionamos estrictamente los inputs de ESTE nivel (ignorando a los nietos)
+                let inputsVisiblesEnNivel = Array.from(currentUl.querySelectorAll(':scope > li > button > input:not([hidden])'));
+                let normales = inputsVisiblesEnNivel.filter(cb => !cb.id.includes('All--'));
+
+                let algunHijoActivo = normales.some(cb => cb.checked);
+                let todosHijosActivos = normales.length > 0 && normales.every(cb => cb.checked);
+
+                // A) Actualizar "Select All" de este submenú
+                let selectAllVis = currentUl.querySelector(':scope > li.opt-select > input[id*="All--"]');
+                let selectAllOculto = currentUl.querySelector(':scope > li.opt-select > input[id*="All--"][hidden]');
+                if (selectAllVis) selectAllVis.checked = todosHijosActivos;
+                if (selectAllOculto) selectAllOculto.checked = todosHijosActivos;
+
+                // B) Subir al padre (ej. de "A" subir a "1", o de "1" subir a "POD") y encenderlo si hay actividad
+                let parentLi = currentUl.closest('li.dropend');
+                if (parentLi) {
+                    let parentBtn = parentLi.querySelector(':scope > .opt-select');
+                    if (parentBtn) {
+                        parentBtn.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = algunHijoActivo);
+                    }
+                    // Trepar un nivel en el árbol
+                    currentUl = parentLi.closest('ul.dropdown-menu');
+                } else {
+                    break;
+                }
+            }
+        });
+    });
+
+	// --- FUNCIONES PARA EL SISTEMA DE REPARACIONES ---
+
+    /**
+     * Obtiene el historial de comentarios desde la DB filtrado por Ubicación y Error.
+     */
+    function fetchRepairComments() {
+        const container = document.getElementById('repairLogsContainer');
+        const modalTitle = document.getElementById('modalSlotTitle').innerText;
+        
+        // Limpiamos la ubicación: "R:POD B:10\n80.92%" -> "R:POD B:10"
+        // Buscamos la parte del Rack/Bahía y el Slot por separado para reconstruir
+        const rackMatch = modalTitle.match(/R:[\w\s]+B:\d+/);
+        const slotMatch = modalTitle.match(/S:[A-Z]/);
+        
+        let cleanLoc = "";
+        if (rackMatch && slotMatch) {
+            cleanLoc = `${rackMatch[0]} ${slotMatch[0]}`;
+        } else {
+            cleanLoc = modalTitle.replace('Stage Details: ', '').split('\n')[0].trim();
+        }
+
+        const currentErrorType = "{{ error_type }}"; 
+
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="small text-muted mt-2">Searching history...</p></div>';
+
+        // Llamada al endpoint: /<error_type>/get_repairs/<location>
+        fetch(`/failures/${encodeURIComponent(currentErrorType)}/get_repairs/${encodeURIComponent(cleanLoc)}`)
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = '';
+                
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted small py-4">No repair history found for this specific error in this slot.</p>';
+                    return;
+                }
+
+                data.forEach(log => {
+                    const logDiv = document.createElement('div');
+                    logDiv.className = 'card mb-2 shadow-sm border-left-primary';
+                    logDiv.innerHTML = `
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge badge-primary-soft text-primary font-weight-bold">
+                                    <i class="fas fa-user-cog mr-1"></i> Tech: ${log.tech}
+                                </span>
+                                <span class="text-muted small"><i class="far fa-clock mr-1"></i> ${log.date}</span>
+                            </div>
+                            <p class="mb-0 small text-dark" style="line-height: 1.4;">${log.comment}</p>
+                        </div>
+                    `;
+                    container.appendChild(logDiv);
+                });
+            })
+            .catch(err => {
+                console.error("Error loading logs:", err);
+                container.innerHTML = '<p class="text-center text-danger small py-3">Error connecting to database.</p>';
+            });
+    }
+
+    /**
+     * Envía un nuevo registro de reparación a la base de datos.
+     */
+    function submitRepair() {
+        const techIdInput = document.getElementById('techId');
+        const commentInput = document.getElementById('repairComment');
+        const techId = techIdInput.value.trim();
+        const comment = commentInput.value.trim();
+        
+        const modalTitle = document.getElementById('modalSlotTitle').innerText;
+        
+        // Misma lógica de limpieza que en fetch
+        const rackMatch = modalTitle.match(/R:[\w\s]+B:\d+/);
+        const slotMatch = modalTitle.match(/S:[A-Z]/);
+        let locationStr = (rackMatch && slotMatch) ? `${rackMatch[0]} ${slotMatch[0]}` : modalTitle.split('\n')[0].trim();
+        
+        const errorType = "{{ error_type }}";
+
+        // Validaciones
+        if (!techId) {
+            alert("Please enter your Technician ID.");
+            techIdInput.focus();
+            return;
+        }
+        if (!comment) {
+            alert("Please provide a comment about the repair.");
+            commentInput.focus();
+            return;
+        }
+
+        // Deshabilitar botón temporalmente para evitar doble clic
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        fetch('/failures/save_repair', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: locationStr,
+                error_code: errorType,
+                comment: comment,
+                tech_id: techId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                // Limpiar inputs
+                commentInput.value = '';
+                // No limpiamos el TechID por si el técnico va a reparar más slots
+                
+                // Recargar la lista de comentarios automáticamente
+                fetchRepairComments();
+                
+                // Feedback visual
+                alert("Repair log saved successfully.");
+            } else {
+                alert("Error saving log: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Submit error:", err);
+            alert("Communication error with server.");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = 'Save Repair & Mark as Resolved';
+        });
+    }
+
+	// --- LÓGICA DE RESETEO DEL MODAL ---
+    
+    // Escuchar el evento de cierre del modal de Bootstrap 5
+    const slotModalElement = document.getElementById('slotDetailsModal');
+    slotModalElement.addEventListener('hidden.bs.modal', function () {
+        
+        // 1. Resetear las pestañas para que "Units" sea siempre la primera al abrir de nuevo
+        const firstTabEl = document.querySelector('#modalDetailTabs a[href="#unitsContent"]');
+        const firstTab = new bootstrap.Tab(firstTabEl);
+        firstTab.show();
+
+        // 2. Limpiar el campo de comentarios para el siguiente registro
+        const commentArea = document.getElementById('repairComment');
+        if (commentArea) commentArea.value = '';
+
+        // 3. Limpiar el contenedor de historial para que no se vea el del slot anterior
+        const logsContainer = document.getElementById('repairLogsContainer');
+        if (logsContainer) {
+            logsContainer.innerHTML = '<p class="text-center text-muted small py-3">Loading history...</p>';
+        }
+        
+        // Nota: El techId (Employee Number) NO lo limpiamos para facilitar 
+        // el trabajo del técnico si va a registrar varios slots seguidos.
+    });
+</script>
+
+{% endblock %}

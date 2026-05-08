@@ -1,0 +1,454 @@
+:root {
+    --topbar-bg: rgba(11, 18, 32, 0.75);
+    --footer-bg: rgba(255, 255, 255, 0.92);
+    --text-main: #0f172a;
+    --primary-blue: #1c6edb;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column; 
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: #eef2f7;
+    color: var(--text-main);
+}
+
+.app-main-full {
+    flex: 1 0 auto; 
+    padding: 75px 15px 10px 15px; 
+    max-width: 100%; 
+    margin: 0;
+    width: 100%;
+}
+
+.app-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    background: var(--topbar-bg);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 1000;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 40px; 
+}
+
+.brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.brand-logo {
+    height: 40px;
+    width: auto;
+}
+
+.brand-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.top-nav a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
+    margin-left: 20px;
+}
+
+.top-nav a:hover {
+    color: #ffffff;
+}
+
+.main-footer {
+    flex-shrink: 0; 
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: var(--footer-bg);
+    border-top: 1px solid rgba(15,23,42,.10);
+    color: rgba(15,23,42,.65);
+    width: 100%;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 10px 15px !important; /* Padding mínimo */
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+.page-header {
+    margin-bottom: 5px !important;
+}
+
+.home-title { 
+    font-size: 2.5rem; 
+    margin-bottom: 2px;
+}
+
+.display-4 { 
+    font-size: clamp(1.2rem, 3vw, 2.2rem) !important;
+    font-weight: 800 !important; 
+}
+
+.card-title {
+    font-size: 0.8rem !important; /* Un poco más grande que el 0.75rem actual */
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.col-md-3 .card {
+    height: calc(50% - 10px); 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 0px !important;
+}
+
+
+
+.muted {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 50vh; 
+    width: 100%;
+    max-width: 900px; 
+    margin: 0 auto;
+    padding-bottom: 10px;
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.row.mb-4.flex-nowrap {
+    display: flex;
+    overflow-x: hidden; 
+}
+
+.row.mb-4 .card {
+    padding: 20px; 
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 25px;
+}
+
+.h-100 {
+    height: 100% !important;
+}
+
+.row.flex-nowrap {
+    margin-right: 0; 
+    margin-left: 0;
+    overflow: hidden;
+}
+
+.row.flex-nowrap > .col-6 {
+    flex: 0 0 50%; 
+    max-width: 50%;
+}
+
+.btn-outline-info:hover {
+    color: #fff !important;
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.chart-container-responsive {
+    position: relative;
+    /* En laptops se ve bien de 400px, en monitores grandes crece */
+    height: 55vh; 
+    min-height: 300px;
+    max-height: 600px;
+    width: 100%;
+}
+
+@media (min-width: 992px) {
+    .col-md-3 {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Centra las cards verticalmente respecto al gráfico */
+    }
+
+    .col-md-3 .card {
+        /* Eliminamos el height: 50% para que la card solo crezca lo necesario */
+        height: auto !important; 
+        min-height: 160px; /* Un tamaño mínimo para que no se vean aplastadas */
+        margin-bottom: 1rem !important;
+    }
+}
+
+.card-body.d-flex.flex-column.justify-content-center {
+    padding: 1.5rem 1rem !important;
+}
+
+/* --- ESTILOS PARA LA MATRIZ DE SLOTS --- */
+
+.matrix-flex-container {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 4px;
+    row-gap: 12px; /* Espacio extra cuando los racks saltan de fila */
+    justify-content: flex-start;
+}
+
+.rack-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;       /* Antes 3px */
+    width: 2.5rem;     /* Antes 38px - Esto permitirá que crezca/encoja */
+    min-width: 35px;
+}
+
+.rack-header-yield {
+    background-color: #00a8b5;
+    color: white;
+    font-weight: 800;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0;
+    margin-bottom: 2px;
+}
+
+/* Estilo Base de las Celdas */
+.slot-cell {
+    width: 100% !important;
+    height: 2.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    background-color: #f8fafc;
+    color: #94a3b8;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+    position: relative;
+}
+
+/* Recuperando el diseño de los textos internos */
+.slot-cell .slot-name {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-bottom: 0.1rem;
+}
+
+.slot-cell .status-text {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 400;
+    margin-top: -3px;
+}
+
+/* --- ESTADO OK (Verde Suave) --- */
+.slot-cell.is-ok {
+    background-color: #f0fff4;
+    border-color: #c6f6d5;
+    color: #2f855a;
+}
+
+.slot-cell.is-ok .status-text {
+    color: #48bb78;
+    font-weight: 600;
+}
+
+/* --- ESTADO FALLA (Rojo Suave) --- */
+.slot-cell.has-fail {
+    background-color: #fff5f5;
+    border-color: #feb2b2;
+    color: #c53030;
+}
+
+.slot-cell.has-fail .status-text {
+    color: #fc8181;
+    font-weight: 700;
+}
+
+.comment-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    line-height: 1;
+    border-radius: 50%;
+    padding: 1px;
+}
+
+/* Animación opcional para que resalte */
+.comment-indicator i {
+    animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.matrix-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow-x: auto; 
+    margin-top: 10px;
+}
+
+.status-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px; /* Espacio entre el punto y el texto */
+    margin-top: -3px;
+}
+
+.status-dot {
+    height: 5px; /* Un poco más grande para que se note */
+    width: 5px;
+    border-radius: 50%;
+    display: inline-block; /* Importante para que respete el tamaño */
+    flex-shrink: 0; /* Evita que el punto se aplaste */
+}
+
+.dot-ok { background-color: #48bb78; }
+.dot-fail { background-color: #f56565; }
+
+.status-text {
+    font-size: 0.6rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+/* Sección de PODs colapsable */
+.pod-container {
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.pod-header {
+    background-color: #0097a7; /* Color sólido como en tu imagen */
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+}
+
+.pod-header:hover {
+    background-color: #e2e8f0;
+}
+
+.pod-body {
+    transition: max-height 0.3s ease-out;
+    overflow: hidden;
+    padding: 10px;
+    display: block;
+}
+
+.pod-body.collapsed {
+    max-height: 0 !important;
+    display: none;
+}
+
+/* Para pantallas medianas/grandes (Monitores de oficina estándar) */
+@media (min-width: 1600px) {
+    :root {
+        font-size: 18px; /* Agranda la base de todos los 'rem' */
+    }
+    .rack-column {
+        width: 3rem; /* Slots más grandes en pantallas grandes */
+    }
+    .slot-cell {
+        height: 3rem;
+    }
+}
+
+/* Para pantallas ultra-wide o 4K */
+@media (min-width: 2000px) {
+    :root {
+        font-size: 22px; 
+    }
+}
+
+/* Filter */
+
+input{
+    margin-left: .5rem;
+    margin-right: .5rem;
+}
+
+label{
+    font-size: small;
+}
+
+/* Forzar submenús a pegarse exactamente al borde derecho de su contenedor padre */
+.dropend .dropdown-menu {
+    position: absolute !important;
+    top: 0 !important;
+    left: 100% !important;
+    transform: none !important; /* ¡Esta es la clave! Apaga el cálculo automático que genera el hueco */
+    margin-top: -1px !important; /* Alinea perfectamente el borde superior */
+    margin-left: -1px !important; /* Traslapa ligeramente el borde izquierdo para que se unan visualmente */
+}
+
+/*Table index*/
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+.nav-tabs .nav-link.active {
+    color: #4e73df !important;
+    border: none;
+    border-bottom: 2px solid #4e73df !important;
+}
+.table-responsive {
+    scrollbar-width: thin; /* Para Firefox */
+}
+/* Estilo para las sub-pestañas (pills) */
+.nav-pills .nav-link.active {
+    background-color: #4e73df;
+}
