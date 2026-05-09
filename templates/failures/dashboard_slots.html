@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style_failures.css') }}">
 <div class="page-header text-center mb-4 mt-2">
     <h2 class="h3 mb-1 fw-bold" style="color: #1a174d;">{{ error_type }}</h2>
     <p class="text-muted small"></p>
 </div>
 
-{% include "filter_button.html" with context %}
+{% include "failures/filter_button.html" with context %}
 
 <div class="matrix-wrapper card border-0">
     {# Definimos el orden de las letras una sola vez #}

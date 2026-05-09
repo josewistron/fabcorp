@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import string
 import requests
@@ -8,6 +9,10 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 from flask import Flask
+
+directorio_actual = os.path.dirname(os.path.abspath(__file__))
+directorio_padre = os.path.abspath(os.path.join(directorio_actual, '..'))
+sys.path.append(directorio_padre)
 
 # 1. IMPORTACIÓN DE TUS MODELOS
 from models import db, PingFailure
@@ -128,24 +133,26 @@ def fetch_ping_data(start_time, end_time):
 # 4. EXCEL Y BASE DE DATOS (ORM)
 # ==========================================
 def generate_validation_excel(records):
-    """Genera un excel y una lista filtrada de las unidades deseadas (Lógica Original Restaurada)"""
-    filename = "Reporte_Racks.xlsx"
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Review_Failures"
-
-    # Cabeceras originales completas
-    headers = [
-        "TestType", "TestStatus", "ProductName", "PartNumber", "ModelName", 
-        "WorkOrder", "SkuName", "SerialNumber", "Stage", "EthernetIP", 
-        "BMCIP", "OperatorID", "Location", "StartTime", "EndTime", 
-        "ErrorCode", "ErrorDescription"
-    ]
-    ws.append(headers)
-
+    """Filtra las unidades deseadas y genera estadísticas de yield. Excel opcional."""
     filtered_list = []
     yield_stats = {}
+
+    # =========================================================
+    # 1. EXCEL: DESCOMENTAR PARA INICIALIZAR EL ARCHIVO
+    # =========================================================
+    # filename = "Reporte_Racks.xlsx"
+    # wb = Workbook()
+    # ws = wb.active
+    # ws.title = "Review_Failures"
+    # headers = [
+    #     "TestType", "TestStatus", "ProductName", "PartNumber", "ModelName", 
+    #     "WorkOrder", "SkuName", "SerialNumber", "Stage", "EthernetIP", 
+    #     "BMCIP", "OperatorID", "Location", "StartTime", "EndTime", 
+    #     "ErrorCode", "ErrorDescription"
+    # ]
+    # ws.append(headers)
+    # =========================================================
+
     for r in records:
         status_raw = str(r.get("TestStatus", "")).strip().lower()
         stage_raw = str(r.get("Stage", "")).strip().lower()
@@ -168,30 +175,38 @@ def generate_validation_excel(records):
         elif status_raw == "failed":
             yield_stats[rack_key]["fail"] += 1
 
-        # --- LÓGICA DE EXCEL/DB (Solo para fallas) ---
+        # --- LÓGICA DE DB (Solo para fallas) ---
         if status_raw == "failed":
-            slot = r.get("Slot", "")
-            location_str = f"R:{rack} B:{bay} S:{slot}" if rack else ""
-            
-            row = [
-                r.get("TestType", ""), r.get("TestStatus", ""),
-                r.get("ProductName", ""), r.get("PartNumber", ""),
-                r.get("ModelName", ""), r.get("WorkOrder", ""),
-                r.get("SkuName", ""), r.get("SerialNumber", ""),
-                r.get("Stage", ""), r.get("EthernetIP", ""), 
-                r.get("BMCIP", ""), r.get("OperatorID", ""), 
-                location_str, r.get("StartTime", ""), 
-                r.get("EndTime", ""), r.get("ErrorCode", ""), 
-                r.get("ErrorDescription", "")
-            ]
-            ws.append(row)
             filtered_list.append(r)
 
-    try:
-        wb.save(filename)
-        print(f"✅ Excel actualizado: {filename}")
-    except PermissionError:
-        print(f"❌ Error: El Excel está abierto. Ciérralo para actualizar.")
+            # =========================================================
+            # 2. EXCEL: DESCOMENTAR PARA AGREGAR LAS FILAS
+            # =========================================================
+            # slot = r.get("Slot", "")
+            # location_str = f"R:{rack} B:{bay} S:{slot}" if rack else ""
+            # row = [
+            #     r.get("TestType", ""), r.get("TestStatus", ""),
+            #     r.get("ProductName", ""), r.get("PartNumber", ""),
+            #     r.get("ModelName", ""), r.get("WorkOrder", ""),
+            #     r.get("SkuName", ""), r.get("SerialNumber", ""),
+            #     r.get("Stage", ""), r.get("EthernetIP", ""), 
+            #     r.get("BMCIP", ""), r.get("OperatorID", ""), 
+            #     location_str, r.get("StartTime", ""), 
+            #     r.get("EndTime", ""), r.get("ErrorCode", ""), 
+            #     r.get("ErrorDescription", "")
+            # ]
+            # ws.append(row)
+            # =========================================================
+
+    # =========================================================
+    # 3. EXCEL: DESCOMENTAR PARA GUARDAR EL ARCHIVO
+    # =========================================================
+    # try:
+    #     wb.save(filename)
+    #     print(f"✅ Excel de validación generado: {filename}")
+    # except PermissionError:
+    #     print(f"❌ Error: El Excel está abierto. Ciérralo para actualizar.")
+    # =========================================================
     
     return filtered_list, yield_stats
 
@@ -341,7 +356,7 @@ def summarize_failures_from_db(start_time, end_time, current_yield_stats):
 # ==========================================
 # 5. EJECUCIÓN
 # ==========================================
-def run_process(periodo="semana", start_custom=None, end_custom=None):
+def run_process(periodo="semana", start_custom=None, end_custom=None, save_json=True):
     st, et = get_time_range(periodo, start_custom, end_custom)
     print(f"🚀 Iniciando proceso en mfte_crm: {st} - {et}")
     
@@ -351,12 +366,29 @@ def run_process(periodo="semana", start_custom=None, end_custom=None):
         save_to_db(filtered)
         reporte = summarize_failures_from_db(st, et, yield_st)
         
-        if reporte:
+        # Solo guardamos el JSON si save_json es True
+        if reporte and save_json:
             with open('data_kpi.json', 'w', encoding='utf-8') as f:
                 json.dump(reporte, f, indent=4)
-            print("✅ Proceso terminado exitosamente.")
+            print("✅ JSON actualizado exitosamente.")
+            
+        print("✅ Proceso terminado exitosamente.")
+        return reporte # <--- ¡Súper importante! Para que Flask (app.py) reciba los datos
     else:
         print("⚠️ No se obtuvieron datos de FusionEye.")
+        return False
+
+def get_data():
+    if not os.path.exists('controllers/data_kpi.json'):
+        return {
+            "resumen_top": {}, 
+            "fallas": {}, 
+            "start_time": "N/A", 
+            "end_time": "N/A",
+            "ultima_actualizacion": "Never"
+        }
+    with open('controllers/data_kpi.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 if __name__ == "__main__":
     # Cambiamos al directorio del script para evitar problemas de rutas

@@ -4,7 +4,7 @@ from datetime import datetime, date, timedelta
 from werkzeug.security import check_password_hash
 from sqlalchemy.orm import contains_eager
 from controllers.rack_monitor import get_server_data
-from failures import run_process, get_time_range
+from controllers.failures import run_process, get_time_range, get_data
 import os
 import json
 import secrets
@@ -137,18 +137,6 @@ def rack_debug():
     return jsonify(data)
 
 #Papoi------------------------------------------------------------------
-def get_data():
-    if not os.path.exists('data_kpi.json'):
-        return {
-            "resumen_top": {}, 
-            "fallas": {}, 
-            "start_time": "N/A", 
-            "end_time": "N/A",
-            "ultima_actualizacion": "Never"
-        }
-    with open('data_kpi.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
-
 @app.route('/failures')
 @login_required
 def home_failures():
@@ -171,14 +159,14 @@ def home_failures():
             if not data:
                 data = get_data()
         except Exception as e:
-            print(f"❌ Error en filter.py: {e}")
+            print(f"❌ Error en failures.py: {e}")
             data = get_data()
     else:
         data = get_data()
         session.pop('last_data', None)
         session.pop('last_filters', None)
 
-    return render_template('failures.html', data=data) 
+    return render_template('failures/failures.html', data=data) 
 
 @app.route('/failures/<error_type>/get_slot_details/<path:location>')
 @login_required
@@ -352,7 +340,7 @@ def dashboard_slots(error_type):
     except Exception as e:
         print(f"⚠️ Error al consultar iconos de reparación: {e}")
 
-    return render_template('dashboard_slots.html', 
+    return render_template('failures/dashboard_slots.html', 
                             error_type=error_type, 
                             data=falla_especifica, 
                             racks=racks_planos,

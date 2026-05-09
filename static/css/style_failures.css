@@ -1,70 +1,13 @@
-:root {
-    --topbar-bg: rgba(11, 18, 32, 0.75);
-    --footer-bg: rgba(255, 255, 255, 0.92);
-    --text-main: #0f172a;
-    --primary-blue: #1c6edb;
-}
 
-html, body {
-    height: 100%;
-    margin: 0;
-}
 
-body {
-    display: flex;
-    flex-direction: column; 
-    font-family: system-ui, -apple-system, sans-serif;
-    background-color: #eef2f7;
-    color: var(--text-main);
-}
-
-.app-main-full {
-    flex: 1 0 auto; 
-    padding: 75px 15px 10px 15px; 
-    max-width: 100%; 
-    margin: 0;
-    width: 100%;
-}
-
-.app-topbar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    background: var(--topbar-bg);
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    z-index: 1000;
-}
-
-.topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 40px; 
-}
-
-.brand-wrap {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.brand-logo {
-    height: 40px;
-    width: auto;
-}
-
-.brand-title {
+/* .brand-title {
     font-weight: 800;
     font-size: 1.1rem;
     color: #ffffff;
     letter-spacing: 0.5px;
-}
+} */
 
-.top-nav a {
+/* .top-nav a {
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     font-weight: 600;
@@ -75,9 +18,9 @@ body {
 
 .top-nav a:hover {
     color: #ffffff;
-}
+} */
 
-.main-footer {
+/* .main-footer {
     flex-shrink: 0; 
     height: 48px;
     display: flex;
@@ -88,7 +31,7 @@ body {
     border-top: 1px solid rgba(15,23,42,.10);
     color: rgba(15,23,42,.65);
     width: 100%;
-}
+} */
 
 .fade-in {
     animation: fadeIn 0.5s ease-in;

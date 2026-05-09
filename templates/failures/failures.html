@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style_failures.css') }}">
 <div class="page-header text-center mb-3">
     <h1 class="home-title">General Failure Report</h1>
     <p class="text-muted small">
@@ -82,7 +82,7 @@
                                 {{ top_error_name | truncate(25) }}
                             </p>
                             <h2 class="display-4 font-weight-bold mb-0" style="font-size: 1.5rem !important;">{{ top_error_count }}</h2>
-                            <a href="/falla/{{ top_error_name | urlencode }}/"class="btn btn-outline-info btn-sm mt-2 w-100">Locate Failure</a>
+                            <a href="/failures/falla/{{ top_error_name | urlencode }}/"class="btn btn-outline-info btn-sm mt-2 w-100">Locate Failure</a>
                         </div>
                     </div>
                 </div>
@@ -480,7 +480,7 @@
                     const params = new URLSearchParams(window.location.search);
                     const query = params.toString(); // Esto mantiene periodo, start y end
                     
-                    window.location.href = `/falla/${encodeURIComponent(errorName)}/?${query}`;
+                    window.location.href = `/failures/falla/${encodeURIComponent(errorName)}/?${query}`;
                 }
             }
         }
