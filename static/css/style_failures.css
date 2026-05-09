@@ -1,38 +1,3 @@
-
-
-/* .brand-title {
-    font-weight: 800;
-    font-size: 1.1rem;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-} */
-
-/* .top-nav a {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
-    transition: color 0.2s;
-    margin-left: 20px;
-}
-
-.top-nav a:hover {
-    color: #ffffff;
-} */
-
-/* .main-footer {
-    flex-shrink: 0; 
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    background: var(--footer-bg);
-    border-top: 1px solid rgba(15,23,42,.10);
-    color: rgba(15,23,42,.65);
-    width: 100%;
-} */
-
 .fade-in {
     animation: fadeIn 0.5s ease-in;
 }
@@ -70,16 +35,6 @@
     letter-spacing: 0.5px;
     margin-bottom: 5px;
 }
-
-.col-md-3 .card {
-    height: calc(50% - 10px); 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin-bottom: 0px !important;
-}
-
-
 
 .muted {
     color: #6b7280;
@@ -140,21 +95,6 @@ canvas {
     min-height: 300px;
     max-height: 600px;
     width: 100%;
-}
-
-@media (min-width: 992px) {
-    .col-md-3 {
-        display: flex;
-        flex-direction: column;
-        justify-content: center; /* Centra las cards verticalmente respecto al gráfico */
-    }
-
-    .col-md-3 .card {
-        /* Eliminamos el height: 50% para que la card solo crezca lo necesario */
-        height: auto !important; 
-        min-height: 160px; /* Un tamaño mínimo para que no se vean aplastadas */
-        margin-bottom: 1rem !important;
-    }
 }
 
 .card-body.d-flex.flex-column.justify-content-center {
@@ -372,9 +312,9 @@ label{
     position: absolute !important;
     top: 0 !important;
     left: 100% !important;
-    transform: none !important; /* ¡Esta es la clave! Apaga el cálculo automático que genera el hueco */
-    margin-top: -1px !important; /* Alinea perfectamente el borde superior */
-    margin-left: -1px !important; /* Traslapa ligeramente el borde izquierdo para que se unan visualmente */
+    transform: none !important; 
+    margin-top: -1px !important; 
+    margin-left: -1px !important; 
 }
 
 /*Table index*/
