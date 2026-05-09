@@ -58,3 +58,42 @@ class PingFailure(db.Model):
     __table_args__ = (
         UniqueConstraint('serial_number', 'start_time', name='unique_serial_start'),
     )
+
+class OpenFailIssue(db.Model):
+    __tablename__ = "open_fail_issues"
+
+    id_serial = db.Column(db.BigInteger, primary_key=True)
+
+    employee_id = db.Column(db.Text, nullable=False)
+    serial_number = db.Column(db.Text, nullable=False)
+    stage = db.Column(db.Text, nullable=False)
+    station = db.Column(db.Text, nullable=False)
+    error_code = db.Column(db.Text, nullable=False)
+    error_description = db.Column(db.Text, nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class FaeRepairQueue(db.Model):
+    __tablename__ = "fae_repair_queue"
+
+    id_queue = db.Column(db.BigInteger, primary_key=True)
+
+    serial_number = db.Column(db.Text, nullable=False)
+    employee_id = db.Column(db.Text, nullable=False)
+
+    stage = db.Column(db.Text, nullable=True)
+    station = db.Column(db.Text, nullable=True)
+    error_code = db.Column(db.Text, nullable=True)
+    error_desc = db.Column(db.Text, nullable=True)
+
+    status = db.Column(db.Text, nullable=False, default="PENDING")
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    released_at = db.Column(db.DateTime, nullable=True)
+
+    id_serial = db.Column(
+        db.BigInteger,
+        db.ForeignKey("open_fail_issues.id_serial"),
+        nullable=True
+    )
+

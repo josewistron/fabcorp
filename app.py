@@ -13,6 +13,7 @@ from sqlalchemy import or_
 
 from controllers.rack_monitor import get_server_data
 from controllers.user import get_all_users, toggle_user_status, create_user
+from controllers.fae import _is_emr_station, get_stage_actual, sync_pending_for_serial, has_pending_fae, _send_to_fae_and_confirm, insert_issue, insert_fae_queue, fusion_autofill_by_sn
 
 
 import io
@@ -21,7 +22,7 @@ app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.do')
 app.secret_key = "super-secret-change-this"
 DB_URL = 'postgresql://guillermo:mfte@10.121.161.225:5432/mfte_crm'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://guillermo:mfte@10.121.161.225:5432/mfte_crm'
+app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -76,6 +77,7 @@ def login():
 
     session["user_id"] = user.id
     session["user_name"] = user.full_name
+    session["employee_number"] = user.employee_number
 
     flash(f"Welcome {user.full_name}")
 
@@ -95,11 +97,23 @@ def index():
     if "user_id" not in session:
         return redirect("/")
 
-    data = get_server_data()  # 👈 reutilizas lo mismo del rack monitor
+    data = get_server_data()
+
+    # 👇 igual que failures
+    try:
+        processed = run_process(periodo="semana", save_json=False)
+
+        data["resumen_top"] = processed.get("resumen_top", {})
+        data["data_failures"] = processed  # opcional si quieres todo el payload
+
+    except Exception as e:
+        print(f"❌ Error index failures block: {e}")
+        data["resumen_top"] = {}
 
     return render_template(
         "index.html",
         name=session["user_name"],
+        data=data,
         config_counts=data.get("configs", {})
     )
 
@@ -429,7 +443,104 @@ def wip(module):
         module=module
     )
 
+@app.route("/fail-units", methods=["GET", "POST"])
+@login_required
+def send_fae():
 
+    if "user_id" not in session:
+        return redirect("/")
+
+    if request.method == "POST":
+
+        serial = (request.form.get("serial_number") or "").strip()
+        station = (request.form.get("station") or "").strip()
+        error_code = (request.form.get("error_code") or "").strip()
+        error_desc = (request.form.get("error_desc") or "").strip()
+
+        employee = session.get("employee_number")
+        stage_before = get_stage_actual(serial)
+
+        if not all([serial, station, error_code, error_desc]):
+            flash("All fields required")
+            return redirect("/fail-units")
+
+        if _is_emr_station(station):
+            flash("EMR units cannot be sent to FAE")
+            return redirect("/fail-units")
+
+        sync_pending_for_serial(serial)
+
+        if has_pending_fae(serial):
+            flash(f"{serial} already pending in FAE")
+            return redirect("/fail-units")
+
+        confirmed, stage_after = _send_to_fae_and_confirm(
+            serial=serial,
+            employee_id=employee,
+            station=station,
+            stage_code=stage_before,
+            error_code=error_code,
+            error_desc=error_desc
+        )
+
+        if not confirmed:
+            flash("Unit not confirmed in RN")
+            return redirect("/fail-units")
+
+        insert_issue(
+            employee_id=employee,
+            serial_number=serial,
+            stage=stage_after,
+            station=station,
+            error_code=error_code,
+            error_desc=error_desc
+        )
+
+        insert_fae_queue(
+            serial=serial,
+            employee_id=employee,
+            stage=stage_after,
+            station=station,
+            error_code=error_code,
+            error_desc=error_desc
+        )
+
+        flash("Unit sent successfully")
+        return redirect("/fail-units")
+
+    return render_template(
+        "send_fae/send_unit.html",
+        name=session["user_name"]
+    )
+
+@app.route("/api/stage")
+@login_required
+def api_stage():
+    serial = request.args.get("serial", "")
+    return jsonify({
+        "stage": get_stage_actual(serial)
+    })
+
+@app.route("/api/fusion_autofill")
+@login_required
+def api_fusion_autofill():
+    serial = request.args.get("serial", "")
+    return jsonify(
+        fusion_autofill_by_sn(serial)
+    )
+
+@app.route("/debug/fusion/<serial>")
+@login_required
+def debug_fusion(serial):
+    result = fusion_autofill_by_sn(serial)
+
+    print("DEBUG FUSION INPUT:", serial)
+    print("DEBUG FUSION OUTPUT:", result)
+
+    return jsonify({
+        "input": serial,
+        "output": result
+    })
 # RUN SERVER
 # =========================
 if __name__ == "__main__":

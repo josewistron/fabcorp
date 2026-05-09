@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}Send Unit to FAE{% endblock %}
+
+{% block content %}
+
+<style>
+.fae-page{
+   height:100%;
+   padding:12px;
+   background:#f0f2f5;
+   display:flex;
+   flex-direction:column;
+   font-size:14px;
+}
+
+.fae-card-wrapper{
+   flex:1;
+   display:flex;
+   min-height:0;
+}
+
+.fae-card{
+   width:100%;
+   border-radius:14px;
+   overflow:hidden;
+}
+
+.form-control-sm{
+   height:36px;
+   font-size:13px;
+   border-radius:8px;
+}
+
+textarea.form-control-sm{
+   height:70px;
+   resize:none;
+}
+
+.fae-label{
+   font-size:16px;
+   font-weight:bold;
+   color:#374151;
+   margin-bottom:6px;
+}
+
+.fae-section{
+   background:#fff;
+   border-radius:10px;
+   padding:10px;
+   border:1px solid #e5e7eb;
+}
+
+#loading-overlay{
+   position:fixed;
+   inset:0;
+   background:rgba(255,255,255,.95);
+   z-index:9999;
+   display:none;
+   align-items:center;
+   justify-content:center;
+   flex-direction:column;
+}
+</style>
+
+<div id="loading-overlay">
+   <div class="spinner-border text-danger"></div>
+   <div class="mt-3 fw-bold">
+      Sending unit to FAE...
+   </div>
+</div>
+
+<div class="fae-page">
+
+   <div class="mb-2">
+      <h5 class="fw-bold mb-0">
+         <i data-lucide="send"></i>
+         Send Unit to FAE
+      </h5>
+   </div>
+
+   <div class="fae-card-wrapper">
+      <div class="card shadow-sm fae-card">
+
+         <form id="send-form" method="POST" enctype="multipart/form-data">
+
+            <div class="card-body p-3">
+
+               <!-- SECTION 1 -->
+               <div class="fae-section mb-2">
+                  <div class="row g-2">
+
+                     <div class="col-md-4">
+                        <div class="fae-label">Serial Number</div>
+                        <input
+                           id="serial_number"
+                           name="serial_number"
+                           class="form-control form-control-sm"
+                           required>
+                     </div>
+
+                     <div class="col-md-4">
+                        <div class="fae-label">Employee</div>
+                        <input
+                           class="form-control form-control-sm"
+                           value="{{ session.get('employee_number') }}"
+                           readonly>
+                     </div>
+
+                     <div class="col-md-4">
+                        <div class="fae-label">Stage</div>
+                        <input
+                           id="stage"
+                           class="form-control form-control-sm"
+                           readonly>
+                     </div>
+
+                  </div>
+               </div>
+
+               <!-- SECTION 2 -->
+               <div class="fae-section mb-2">
+                  <div class="row g-2">
+
+                     <div class="col-md-6">
+                        <div class="fae-label">Station</div>
+                        <input
+                           id="station"
+                           name="station"
+                           class="form-control form-control-sm"
+                           required>
+                     </div>
+
+                     <div class="col-md-6">
+                        <div class="fae-label">Error Code</div>
+                        <input
+                           id="error_code"
+                           name="error_code"
+                           class="form-control form-control-sm"
+                           readonly>
+                     </div>
+
+                     <div class="col-md-12">
+                        <div class="fae-label">Error Description</div>
+                        <textarea
+                           id="error_desc"
+                           name="error_desc"
+                           class="form-control form-control-sm"
+                           required></textarea>
+                     </div>
+
+                  </div>
+               </div>
+
+               <!-- SECTION 3 -->
+               <div class="fae-section">
+                  <div class="row g-2">
+
+                     <div class="col-md-6">
+                        <div class="fae-label">Comments</div>
+                        <textarea
+                           name="mfte_comment"
+                           class="form-control form-control-sm"></textarea>
+                     </div>
+
+                     <div class="col-md-6">
+                        <div class="fae-label">File</div>
+                        <input
+                           type="file"
+                           name="mfte_file"
+                           class="form-control form-control-sm">
+                     </div>
+
+                  </div>
+               </div>
+
+               <div class="d-flex justify-content-between mt-3">
+
+                  <a href="/index" class="btn btn-outline-secondary btn-sm">
+                     Cancel
+                  </a>
+
+                  <button id="send-btn" class="btn btn-danger btn-sm">
+                     Send to FAE
+                  </button>
+
+               </div>
+
+            </div>
+         </form>
+
+      </div>
+   </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+let timerStage=null;
+let timerFusion=null;
+
+const serialInput=document.getElementById("serial_number");
+const stageInput=document.getElementById("stage");
+const stationInput=document.getElementById("station");
+const errorCodeInput=document.getElementById("error_code");
+const errorDescInput=document.getElementById("error_desc");
+
+const form=document.getElementById("send-form");
+const btn=document.getElementById("send-btn");
+const overlay=document.getElementById("loading-overlay");
+
+const STAGE_ENDPOINT="/api/stage";
+const FUSION_ENDPOINT="/api/fusion_autofill";
+
+function runAutofill(serial){
+    clearTimeout(timerStage);
+
+    timerStage = setTimeout(() => {
+        fetch(`${STAGE_ENDPOINT}?serial=${serial}`)
+        .then(r => r.json())
+        .then(d => {
+            stageInput.value = d.stage || "";
+        });
+    }, 250);
+
+    clearTimeout(timerFusion);
+
+    timerFusion = setTimeout(() => {
+        fetch(`${FUSION_ENDPOINT}?serial=${serial}`)
+        .then(r => r.json())
+        .then(d => {
+            stationInput.value = d.station || "";
+            errorCodeInput.value = d.error_code || "";
+            errorDescInput.value = d.error_description || "";
+        });
+    }, 350);
+}
+
+serialInput.addEventListener("input", function(){
+   let serial=this.value.trim();
+
+   if(serial.length < 5){
+      stageInput.value="";
+      return;
+   }
+
+   runAutofill(serial);
+});
+
+form.addEventListener("submit", function(){
+   btn.disabled=true;
+   overlay.style.display="flex";
+});
+</script>
+
+{% endblock %}
