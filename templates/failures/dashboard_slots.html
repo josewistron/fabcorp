@@ -204,9 +204,11 @@
 							<h6 class="font-weight-bold text-primary mb-3">Log New Repair Action</h6>
 							<div class="form-row">
 								<div class="form-group col-md-6">
-									<label class="small font-weight-bold">Employee number:</label>
-									<input type="text" id="techId" class="form-control form-control-sm" placeholder="ID (e.g. ML12345678)">
-								</div>
+                                    <label class="small font-weight-bold">Technician:</label>
+                                    <input type="text" id="techId" class="form-control form-control-sm text-primary fw-bold" 
+                                        value="{{ session.get('employee_number') }}" readonly 
+                                        style="background-color: #e9ecef; cursor: not-allowed;">
+                                </div>
 							</div>
 							<div class="form-group">
 								<label class="small font-weight-bold">Action Taken:</label>

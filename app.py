@@ -76,6 +76,7 @@ def login():
 
     session["user_id"] = user.id
     session["user_name"] = user.full_name
+    session["employee_number"] = user.employee_number
 
     flash(f"Welcome {user.full_name}")
 
