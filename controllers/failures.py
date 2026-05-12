@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 from flask import Flask
+from sqlalchemy.dialects.postgresql import insert
 
 directorio_actual = os.path.dirname(os.path.abspath(__file__))
 directorio_padre = os.path.abspath(os.path.join(directorio_actual, '..'))
@@ -211,47 +212,65 @@ def generate_validation_excel(records):
     return filtered_list, yield_stats
 
 def save_to_db(filtered_records):
-    """Guarda los datos en mfte_crm (Ahora con logs de error)"""
+    """Guarda los datos en mfte_crm usando Bulk Insert (ON CONFLICT DO NOTHING)"""
     if not filtered_records:
         print("⚠️ No hay datos filtrados (fallas) para guardar en DB.")
         return
 
     with app.app_context():
-        count = 0
+        # 1. Preparamos todos los datos en una sola lista (como hacías antes)
+        values_to_insert = []
         for r in filtered_records:
+            start_str = r.get("StartTime")
+            if not start_str:
+                continue # Si no hay fecha de inicio, lo saltamos
+            
             try:
-                start_str = r.get("StartTime")
-                if not start_str:
-                    continue # Si no hay fecha de inicio, no lo podemos guardar
-                
                 # Convertimos el string a objeto datetime
                 st_dt = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S")
-                
-                # Verificamos duplicados antes de insertar
-                exists = PingFailure.query.filter_by(
-                    serial_number=r.get("SerialNumber"), 
-                    start_time=st_dt
-                ).first()
-                
-                if not exists:
-                    new_fail = PingFailure(
-                        model_name=r.get("ModelName"),
-                        product_name=r.get("ProductName"),
-                        serial_number=r.get("SerialNumber"),
-                        location=f"R:{r.get('Rack')} B:{r.get('Bay')} S:{r.get('Slot')}",
-                        start_time=st_dt,
-                        end_time=r.get("EndTime"),
-                        error_code=r.get("ErrorCode")
-                    )
-                    db.session.add(new_fail)
-                    count += 1
-            except Exception as e:
-                # ¡AQUÍ ESTABA EL PROBLEMA! Ahora sabremos por qué falla
-                print(f"⚠️ Error al guardar el SN {r.get('SerialNumber')}: {e}")
-                continue
-                
-        db.session.commit()
-        print(f"💾 {count} registros NUEVOS insertados en mfte_crm.")
+            except ValueError:
+                continue # Si la fecha viene corrupta, lo saltamos
+
+            # Limpiamos NoneTypes para evitar "R:None B:None S:None"
+            rack = r.get('Rack') or ''
+            bay = r.get('Bay') or ''
+            slot = r.get('Slot') or ''
+
+            values_to_insert.append({
+                "model_name": r.get("ModelName"),
+                "product_name": r.get("ProductName"),
+                "serial_number": r.get("SerialNumber"),
+                "location": f"R:{rack} B:{bay} S:{slot}",
+                "start_time": st_dt,
+                "end_time": r.get("EndTime"),
+                "error_code": r.get("ErrorCode")
+            })
+
+        if not values_to_insert:
+            return
+
+        # 2. Ejecutamos la inserción masiva delegando el trabajo a PostgreSQL
+        try:
+            # Creamos la instrucción INSERT
+            stmt = insert(PingFailure).values(values_to_insert)
+            
+            # Le agregamos la regla ON CONFLICT DO NOTHING
+            # index_elements son las columnas que conforman tu restricción UNIQUE
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=['serial_number', 'start_time'] 
+            )
+            
+            # Ejecutamos y guardamos
+            result = db.session.execute(stmt)
+            db.session.commit()
+            
+            # result.rowcount nos dirá exactamente cuántos registros NUEVOS entraron reales
+            print(f"💾 {result.rowcount} registros NUEVOS insertados en mfte_crm.")
+            
+        except Exception as e:
+            # Si hay un error mayor (como que se caiga la conexión), hacemos rollback limpio
+            db.session.rollback()
+            print(f"❌ Error crítico al guardar en base de datos: {e}")
 
 def summarize_failures_from_db(start_time, end_time, current_yield_stats):
     """Genera resumen por Top Fallas + PING (Lógica Original Restaurada)"""
