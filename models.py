@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import UniqueConstraint
 
 db = SQLAlchemy()
@@ -9,6 +9,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     employee_number = db.Column(db.String(50), unique=True, nullable=False)
+    badge_id = db.Column(db.String(50), unique=True, nullable=True)
     full_name = db.Column(db.String(150), nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
     start_date = db.Column(db.Date, nullable=False)
@@ -89,3 +90,17 @@ class FaeRepairQueue(db.Model):
         nullable=True
     )
 
+class Record(db.Model):
+    __tablename__ = "records"
+
+    id = db.Column(db.BigInteger, primary_key=True)
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False)
+    employee_number = db.Column(db.String(20))
+
+    record_time = db.Column(db.DateTime, default=datetime.utcnow)
+    record_date = db.Column(db.Date, default=date.today)
+    record_type = db.Column(db.String(20))  # checkin / checkout
+    source = db.Column(db.String(50), default="kiosk")
+    
+    user = db.relationship("User", backref="records")

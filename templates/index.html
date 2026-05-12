@@ -67,6 +67,50 @@
                         font-weight:600;
                      ">
                         Loading...
+         <div class="card-body d-flex flex-column justify-content-between" style="padding:12px;">
+
+            <div>
+               <a target="_blank" href="/failures">
+                  <h6 class="fw-bold mb-2">
+                     <i data-lucide="alert-triangle"></i>
+                     Failures
+                  </h6>
+               </a>
+               {% if data and data.resumen_top %}
+
+                  {% set top_error_name = data.resumen_top.items()
+                     | sort(attribute='1', reverse=true)
+                     | map(attribute='0')
+                     | first %}
+
+                  {% set top_error_count = data.resumen_top[top_error_name] %}
+                  {% set total_others = data.resumen_top.values() | sum - top_error_count %}
+
+                  <div class="row g-2">
+
+                     <div class="col-6">
+                        <div style="
+                           display:flex;
+                           flex-direction:column;
+                           justify-content:center;
+                           align-items:center;
+                           padding:10px 8px;
+                           border-radius:6px;
+                           background:#fee2e2;
+                           color:#991b1b;
+                           font-size:10px;
+                           font-weight:600;
+                           text-align:center;
+                           height:100%;
+                        ">
+                           <div style="font-size:11px;">Most Common</div>
+                           <div style="font-size:11px; margin-top:4px;">
+                              {{ top_error_name | truncate(18) }}
+                           </div>
+                           <div style="font-size:16px; margin-top:6px;">
+                              {{ top_error_count }}
+                           </div>
+                        </div>
                      </div>
                   </div>
 

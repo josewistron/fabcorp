@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto p-8">
+   <!-- HEADER -->
+   <div class="flex justify-between items-center mb-6">
+      <div>
+         <h1 class="text-3xl font-bold text-slate-800">
+            Attendance Reports
+         </h1>
+         <p class="text-slate-500 text-sm">
+            Admin dashboard
+         </p>
+      </div>
+      <!-- EXPORT -->
+      <a href="/user_check_in_reports/export?user={{ request.args.get('user','') }}&type={{ request.args.get('type','') }}&date={{ request.args.get('date','') }}&shift={{ request.args.get('shift','') }}"
+         class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg shadow">
+      Download Excel
+      </a>
+   </div>
+   <!-- FILTER CARD -->
+   <div class="bg-white p-5 rounded-xl shadow mb-6 border border-slate-200">
+      <form method="GET" class="flex flex-wrap gap-3 items-center">
+         <input 
+            type="text" 
+            name="user"
+            placeholder="Employee number or name"
+            value="{{ request.args.get('user','') }}"
+            class="p-3 border rounded-lg w-80 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            >
+         <select name="type" class="p-3 border rounded-lg w-52">
+            <option value="">All types</option>
+            <option value="checkin" {% if request.args.get('type')=='checkin' %}selected{% endif %}>
+            Check-in
+            </option>
+            <option value="checkout" {% if request.args.get('type')=='checkout' %}selected{% endif %}>
+            Check-out
+            </option>
+         </select>
+         <select name="shift" class="p-3 border rounded-lg w-40">
+            <option value="">All shifts</option>
+            <option value="1" {% if request.args.get('shift')=='1' %}selected{% endif %}>1</option>
+            <option value="2" {% if request.args.get('shift')=='2' %}selected{% endif %}>2</option>
+            <option value="3" {% if request.args.get('shift')=='3' %}selected{% endif %}>3</option>
+         </select>
+         <input 
+            type="date" 
+            name="date"
+            value="{{ request.args.get('date','') }}"
+            class="p-3 border rounded-lg"
+            >
+         <button class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg">
+         Filter
+         </button>
+      </form>
+   </div>
+   <!-- TABLE -->
+   <div class="bg-white rounded-xl shadow overflow-hidden">
+      <table class="w-full text-left">
+         <thead class="bg-slate-200 text-slate-700 text-sm uppercase">
+            <tr>
+               <th class="p-4">Employee</th>
+               <th >Name</th>
+               <th>Type</th>
+               <th>Shift</th>
+               <th>Time</th>
+            </tr>
+         </thead>
+         <tbody class="divide-y divide-slate-200">
+            {% for r in records %}
+            <tr class="hover:bg-slate-50">
+               <td class="p-4 font-medium text-slate-800">
+                  {{ r.employee_number }}
+               </td>
+               <td class="text-slate-700 font-semibold">
+                  {{ r.user.full_name }}
+               </td>
+               <td>
+                  {% if r.record_type == 'checkin' %}
+                  <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
+                  CHECK-IN
+                  </span>
+                  {% else %}
+                  <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs">
+                  CHECK-OUT
+                  </span>
+                  {% endif %}
+               </td>
+               <td class="text-slate-600">
+                  <span class="bg-slate-100 px-2 py-1 rounded border border-slate-200 text-xs">
+                  {{ r.user.shift if r.user.shift else 'N/A' }}
+                  </span>
+               </td>
+               <td class="text-slate-600">
+                  {{ r.record_time }}
+               </td>
+            </tr>
+            {% endfor %}
+         </tbody>
+      </table>
+   </div>
+</div>
+{% endblock %}
