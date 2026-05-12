@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}ABC Report{% endblock %}
+
+{% block content %}
+
+<style>
+.abc-page{
+   display:flex;
+   flex-direction:column;
+   gap:12px;
+}
+
+/* reuse sistema base */
+.abc-section{
+   background:#fff;
+   border:1px solid var(--border);
+   border-radius:12px;
+   padding:14px;
+}
+
+.abc-title{
+   font-weight:700;
+   color:var(--text);
+   font-size:16px;
+   display:flex;
+   align-items:center;
+   gap:8px;
+}
+
+.subtext{
+   font-size:12px;
+   color:var(--muted);
+}
+
+/* KPI cards */
+.kpi{
+   background:#fff;
+   border:1px solid var(--border);
+   border-radius:12px;
+   padding:14px;
+   text-align:center;
+}
+
+.kpi .value{
+   font-size:26px;
+   font-weight:800;
+   color:var(--primary);
+}
+
+/* table */
+.report-table{
+   width:100%;
+   font-size:13px;
+}
+
+.report-table th{
+   font-size:12px;
+   color:var(--muted);
+   text-align:left;
+   padding:6px;
+}
+
+.report-table td{
+   padding:6px;
+   border-top:1px solid var(--border);
+}
+
+/* charts container */
+.chart-box{
+   height:320px;
+}
+</style>
+
+<div class="abc-page">
+
+   <!-- HEADER SIMPLE (sin hero) -->
+   <div class="abc-section">
+      <div class="abc-title">
+         <i data-lucide="bar-chart-3"></i>
+         ABC Report
+      </div>
+      <div class="subtext">Yield Rate analysis (Test analysis by phase with trends and automatic YR calculation)</div>
+   </div>
+
+   <!-- FILTERS -->
+   <div class="abc-section">
+      <div class="row g-2">
+
+         <div class="col-md-3">
+            <label class="subtext">Date</label>
+            <input type="date" id="reportDate" class="form-control form-control-sm">
+         </div>
+
+         <div class="col-md-3 d-flex align-items-end">
+            <button id="loadReportBtn" class="btn btn-primary btn-sm w-100">
+               Load Report
+            </button>
+         </div>
+
+      </div>
+   </div>
+
+   <!-- KPIs -->
+   <div class="row g-3">
+
+      <div class="col-md-4">
+         <div class="kpi">
+            <div>Total PD</div>
+            <div id="pdOutputBadge" class="value">--</div>
+         </div>
+      </div>
+
+      <div class="col-md-4">
+         <div class="kpi">
+            <div>FAE Output</div>
+            <div id="faeOutputBadge" class="value">--</div>
+         </div>
+      </div>
+
+      <div class="col-md-4">
+         <div class="kpi">
+            <div>Global YR</div>
+            <div id="globalYR" class="value">--%</div>
+         </div>
+      </div>
+
+   </div>
+
+   <!-- FRESH -->
+   <div class="abc-section">
+
+      <div class="abc-title">
+         📈 Fresh Units (PD)
+      </div>
+
+      <table class="report-table">
+         <thead>
+            <tr>
+               <th>Phase</th>
+               <th>Input</th>
+               <th>GAP</th>
+               <th>Pass</th>
+               <th>Fail</th>
+               <th>YR%</th>
+            </tr>
+         </thead>
+         <tbody id="freshTableBody"></tbody>
+      </table>
+
+      <div class="chart-box">
+         <canvas id="freshChart"></canvas>
+      </div>
+
+   </div>
+
+   <!-- FAE -->
+   <div class="abc-section">
+
+      <div class="abc-title">
+         🔧 FAE Units
+      </div>
+
+      <table class="report-table">
+         <tbody id="faeTableBody"></tbody>
+      </table>
+
+      <div class="chart-box">
+         <canvas id="faeChart"></canvas>
+      </div>
+
+   </div>
+
+   <!-- TRENDS -->
+   <div class="abc-section">
+
+      <div class="abc-title">
+         📊 Trends
+      </div>
+
+      <div class="row g-2 mb-2">
+
+         <div class="col-md-3">
+            <input type="date" id="trendsStartDate"
+                   class="form-control form-control-sm">
+         </div>
+
+         <div class="col-md-3">
+            <input type="date" id="trendsEndDate"
+                   class="form-control form-control-sm">
+         </div>
+
+         <div class="col-md-3">
+            <button id="loadTrendsBtn"
+                    class="btn btn-primary btn-sm w-100">
+               Load
+            </button>
+         </div>
+
+      </div>
+
+      <div class="chart-box">
+         <canvas id="freshTrendsChart"></canvas>
+      </div>
+
+      <div class="chart-box mt-3">
+         <canvas id="faeTrendsChart"></canvas>
+      </div>
+
+   </div>
+
+</div>
+
+<script>
+lucide.createIcons();
+</script>
+
+{% endblock %}

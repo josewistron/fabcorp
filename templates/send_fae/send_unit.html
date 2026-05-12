@@ -77,6 +77,17 @@ textarea.form-control-sm{
          Send Unit to FAE
       </h5>
    </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mt-2">
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ category }} py-1 px-2 mb-1">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
    <div class="fae-card-wrapper">
       <div class="card shadow-sm fae-card">

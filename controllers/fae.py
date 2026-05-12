@@ -528,3 +528,37 @@ def fusion_autofill_by_sn(serial_number):
             or ""
         ).strip()
     }
+def send_to_repair(serial, employee_id, station, stage_code, error_code, error_desc):
+    soap_body = f"""<?xml version="1.0" encoding="utf-8"?>
+    <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                     xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+      <soap12:Body>
+        <CompleteWithDefectRemark xmlns="http://localhost/Tester.WebService/WebService">
+          <UnitSerialNumber>{serial}</UnitSerialNumber>
+          <Line>AF3</Line>
+          <StageCode>{stage_code}</StageCode>
+          <StationName>{station}</StationName>
+          <EmployeeID>{employee_id}</EmployeeID>
+          <Pass>false</Pass>
+          <TrnDatas><TrnData>{error_code}</TrnData></TrnDatas>
+          <DefectRmark>{error_desc}</DefectRmark>
+        </CompleteWithDefectRemark>
+      </soap12:Body>
+    </soap12:Envelope>"""
+
+    headers = {"Content-Type": "application/soap+xml; charset=utf-8"}
+
+    try:
+        resp = requests.post(
+            "http://10.49.168.125:5556/Tester.WebService/WebService.asmx",
+            data=soap_body,
+            headers=headers,
+            timeout=10
+        )
+        root = ET.fromstring(resp.content)
+        result = root.find(".//CompleteWithDefectRemarkResult")
+        return (result.text or "").strip() if result is not None else "NO-WS-RESPONSE"
+
+    except Exception:
+        return "SOAP-CONNECTION-ERROR"

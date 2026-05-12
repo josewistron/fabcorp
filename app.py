@@ -91,31 +91,72 @@ def login_required(f):
     wrapper.__name__ = f.__name__
     return wrapper
 
+import time
+import threading
+
+CACHE = {
+    "ts": 0,
+    "data": None,
+    "lock": threading.Lock()
+}
+
+CACHE_TTL = 120
+
+def get_cached_index():
+    now = time.time()
+
+    # cache hit
+    if CACHE["data"] and (now - CACHE["ts"] < CACHE_TTL):
+        return CACHE["data"]
+
+    with CACHE["lock"]:
+
+        # doble check
+        now = time.time()
+        if CACHE["data"] and (now - CACHE["ts"] < CACHE_TTL):
+            return CACHE["data"]
+
+        data = get_server_data()
+        processed = run_process(periodo="semana", save_json=False)
+
+        resumen = processed.get("resumen_top", {}) or {}
+
+        if resumen:
+            top = max(resumen, key=lambda k: resumen.get(k, 0))
+            top_count = resumen[top]
+            others = sum(resumen.values()) - top_count
+        else:
+            top, top_count, others = "N/A", 0, 0
+
+        data = data or {}
+
+        data["configs"] = data.get("configs", {})
+        data["top_error_name"] = top
+        data["top_error_count"] = top_count
+        data["total_others"] = others
+
+        CACHE["data"] = data
+        CACHE["ts"] = now
+
+        return data
+
 @app.route("/index")
 @login_required
 def index():
-    if "user_id" not in session:
-        return redirect("/")
 
-    data = get_server_data()
-
-    # 👇 igual que failures
-    try:
-        processed = run_process(periodo="semana", save_json=False)
-
-        data["resumen_top"] = processed.get("resumen_top", {})
-        data["data_failures"] = processed  # opcional si quieres todo el payload
-
-    except Exception as e:
-        print(f"❌ Error index failures block: {e}")
-        data["resumen_top"] = {}
+    data = get_cached_index() or {}
 
     return render_template(
         "index.html",
-        name=session["user_name"],
-        data=data,
-        config_counts=data.get("configs", {})
+        name=session.get("user_name", ""),
+        config_counts=data.get("configs", {}),
+        data=data
     )
+
+@app.route("/api/dashboard")
+@login_required
+def dashboard():
+    return jsonify(get_cached_index())
 
 @app.route("/logout")
 def logout():
@@ -484,8 +525,9 @@ def send_fae():
         )
 
         if not confirmed:
-            flash("Unit not confirmed in RN")
-            return redirect("/fail-units")
+            if not confirmed:
+                flash(f"FAILED: Unit NOT sent to FAE. Last stage: {stage_after}", "danger")
+                return redirect("/fail-units")
 
         insert_issue(
             employee_id=employee,
@@ -505,7 +547,7 @@ def send_fae():
             error_desc=error_desc
         )
 
-        flash("Unit sent successfully")
+        flash(f"SUCCESS: Unit sent to FAE. Final stage: {stage_after}", "success")
         return redirect("/fail-units")
 
     return render_template(
@@ -541,6 +583,13 @@ def debug_fusion(serial):
         "input": serial,
         "output": result
     })
+
+
+@app.route('/abc_report')
+def abc_report():
+    return render_template(
+        'abc_report/report.html'
+    )
 # RUN SERVER
 # =========================
 if __name__ == "__main__":

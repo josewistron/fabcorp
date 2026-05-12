@@ -207,11 +207,25 @@
             .left { display: none; }
             .right { width: 100%; }
         }
+       .card{
+    position: relative;
+}
+
+#local-loader{
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.9);
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border-radius: 18px;
+}
     </style>
 </head>
 
 <body>
-
 <div class="layout">
 
     <!-- LEFT -->
@@ -233,7 +247,12 @@
     <div class="right">
 
         <div class="card">
-
+<div id="local-loader">
+        <div class="spinner-border text-primary"></div>
+        <div style="margin-top:10px; font-weight:600;">
+            Signing in...
+        </div>
+    </div>
             <div class="brand">
                 <h2>FABCORP</h2>
                 <span>MFTE PORTAL</span>
@@ -279,6 +298,15 @@
 <script>
     lucide.createIcons();
 </script>
+<script>
+lucide.createIcons();
 
+const form = document.querySelector("form");
+const loader = document.getElementById("local-loader");
+
+form.addEventListener("submit", function () {
+    loader.style.display = "flex";
+});
+</script>
 </body>
 </html>

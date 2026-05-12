@@ -3,141 +3,149 @@
 
 <h2>Dashboard Home</h2>
 <p>Welcome to MFTE system</p>
-<div class="row g-3 align-items-stretch">
 
-   <!-- RACK -->
-   <div class="col-md-6 col-lg-4 d-flex">
+<!-- LOADER -->
+<div id="dashboard-loader" class="card shadow-sm p-3 mb-3" style="border-radius:12px;">
+   <div class="d-flex align-items-center">
+      <div class="spinner-border text-primary"></div>
+      <span class="ms-2">Loading dashboard...</span>
+   </div>
+</div>
 
-      <div class="card shadow-sm w-100 h-100"
-           style="border-radius:12px; border:1px solid #e5e7eb; background:#ffffff;">
+<!-- CONTENIDO -->
+<div id="dashboard-content" style="display:none;">
 
-         <div class="card-body d-flex flex-column" style="padding:12px;">
+   <div class="row g-3 align-items-stretch">
 
-            <a target="_blank" href="/rack-monitor">
-               <div class="mb-2">
-                  <h6 class="fw-bold mb-0">
+      <!-- RACK -->
+      <div class="col-md-6 col-lg-4 d-flex">
+         <div class="card shadow-sm w-100 h-100"   
+              style="border-radius:12px; border:1px solid #e5e7eb; background:#ffffff;">
+
+            <div class="card-body d-flex flex-column" style="padding:12px;">
+
+               <a target="_blank" href="/rack-monitor">
+                  <h6 class="fw-bold">
                      <i data-lucide="server"></i>
                      Rack Overview
                   </h6>
-               </div>
-            </a>
+               </a>
 
-            <div class="row g-2">
-               {% for key, value in config_counts.items() %}
-               <div class="col-6">
-                  <div style="
-                     display:flex;
-                     justify-content:space-between;
-                     align-items:center;
-                     padding:5px 8px;
-                     border-radius:6px;
-                     background:{% if value == 0 %}#e5e7eb{% else %}#0d6efd{% endif %};
-                     color:{% if value == 0 %}#374151{% else %}#fff{% endif %};
-                     font-size:10px;
-                     font-weight:600;
-                  ">
-                     <span>{{ key }}</span>
-                     <span>{{ value }}</span>
-                  </div>
-               </div>
-               {% endfor %}
+               <div class="row g-2" id="rack-container"></div>
+
             </div>
-
          </div>
       </div>
 
-   </div>
+      <!-- FAILURES -->
+      <div class="col-md-6 col-lg-4 d-flex">
+         <div class="card shadow-sm w-100 h-100"
+              style="border-radius:12px; border:1px solid #e5e7eb; background:#ffffff;">
 
+            <div class="card-body d-flex flex-column justify-content-between">
 
-   <!-- FAILURES -->
-   <div class="col-md-6 col-lg-4 d-flex">
+               <a target="_blank" href="/failures">
+                  <h6 class="fw-bold mb-2">
+                     <i data-lucide="alert-triangle"></i>
+                     Failures
+                  </h6>
+               </a>
 
-      <div class="card shadow-sm w-100 h-100"
-           style="border-radius:12px; border:1px solid #e5e7eb; background:#ffffff;">
+               <div class="row g-2">
 
-         <div class="card-body d-flex flex-column justify-content-between" style="padding:12px;">
-
-            <div>
-<a target="_blank" href="/failures">
-               <h6 class="fw-bold mb-2">
-                  <i data-lucide="alert-triangle"></i>
-                  Failures
-               </h6>
-</a>
-               {% if data and data.resumen_top %}
-
-                  {% set top_error_name = data.resumen_top.items()
-                     | sort(attribute='1', reverse=true)
-                     | map(attribute='0')
-                     | first %}
-
-                  {% set top_error_count = data.resumen_top[top_error_name] %}
-                  {% set total_others = data.resumen_top.values() | sum - top_error_count %}
-
-                  <div class="row g-2">
-
-                     <div class="col-6">
-                        <div style="
-                           display:flex;
-                           flex-direction:column;
-                           justify-content:center;
-                           align-items:center;
-                           padding:10px 8px;
-                           border-radius:6px;
-                           background:#fee2e2;
-                           color:#991b1b;
-                           font-size:10px;
-                           font-weight:600;
-                           text-align:center;
-                           height:100%;
-                        ">
-                           <div style="font-size:11px;">Most Common</div>
-                           <div style="font-size:11px; margin-top:4px;">
-                              {{ top_error_name | truncate(18) }}
-                           </div>
-                           <div style="font-size:16px; margin-top:6px;">
-                              {{ top_error_count }}
-                           </div>
-                        </div>
+                  <div class="col-6">
+                     <div id="top-error" style="
+                        display:flex;
+                        flex-direction:column;
+                        justify-content:center;
+                        align-items:center;
+                        padding:10px;
+                        border-radius:6px;
+                        background:#fee2e2;
+                        color:#991b1b;
+                        font-size:12px;
+                        font-weight:600;
+                     ">
+                        Loading...
                      </div>
-
-                     <div class="col-6">
-                        <div style="
-                           display:flex;
-                           flex-direction:column;
-                           justify-content:center;
-                           align-items:center;
-                           padding:10px 8px;
-                           border-radius:6px;
-                           background:#f3f4f6;
-                           color:#111827;
-                           font-size:10px;
-                           font-weight:600;
-                           text-align:center;
-                           height:100%;
-                        ">
-                           <div style="font-size:11px;">Others</div>
-                           <div style="font-size:11px; margin-top:4px;">
-                              Top excluded
-                           </div>
-                           <div style="font-size:16px; margin-top:6px;">
-                              {{ total_others }}
-                           </div>
-                        </div>
-                     </div>
-
                   </div>
 
-               {% else %}
-                  <div class="text-muted small">No failure data available</div>
-               {% endif %}
+                  <div class="col-6">
+                     <div id="others" style="
+                        display:flex;
+                        flex-direction:column;
+                        justify-content:center;
+                        align-items:center;
+                        padding:10px;
+                        border-radius:6px;
+                        background:#f3f4f6;
+                        color:#111827;
+                        font-size:12px;
+                        font-weight:600;
+                     ">
+                        Loading...
+                     </div>
+                  </div>
+
+               </div>
 
             </div>
-
          </div>
       </div>
 
    </div>
 
 </div>
+
+<!-- SCRIPT REAL -->
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+
+   const loader = document.getElementById("dashboard-loader");
+   const content = document.getElementById("dashboard-content");
+
+   try {
+
+      const res = await fetch("/api/dashboard");
+      const data = await res.json();
+
+      // RACK
+      const rack = document.getElementById("rack-container");
+      rack.innerHTML = Object.entries(data.configs || {}).map(([k,v]) => `
+         <div class="col-6">
+            <div style="
+               display:flex;
+               justify-content:space-between;
+               padding:5px 8px;
+               border-radius:6px;
+               background:${v==0?'#e5e7eb':'#0d6efd'};
+               color:${v==0?'#374151':'#fff'};
+               font-size:10px;
+               font-weight:600;
+            ">
+               <span>${k}</span>
+               <span>${v}</span>
+            </div>
+         </div>
+      `).join("");
+
+      // FAILURES
+      document.getElementById("top-error").innerHTML =
+         `<div>Most Common</div><div>${data.top_error_name}</div><div style="font-size:16px">${data.top_error_count}</div>`;
+
+      document.getElementById("others").innerHTML =
+         `<div>Others</div><div>${data.total_others}</div>`;
+
+   } catch (e) {
+      console.error(e);
+   }
+
+   loader.style.display = "none";
+   content.style.display = "block";
+
+   lucide.createIcons();
+
+});
+</script>
+
 {% endblock %}
