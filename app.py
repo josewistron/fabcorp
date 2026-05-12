@@ -17,7 +17,7 @@ from controllers.fae import _is_emr_station, get_stage_actual, sync_pending_for_
 
 
 import io
-from models import db, User, SlotRepair, PingFailure
+from models import db, User, SlotRepair, PingFailure, Record
 app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.do')
 app.secret_key = "super-secret-change-this"
@@ -541,6 +541,104 @@ def debug_fusion(serial):
         "input": serial,
         "output": result
     })
+
+# =========================
+# Check-In Reports
+# =========================
+
+@app.route("/user_check_in_reports", methods=["GET"])
+@login_required
+def reports():
+
+    user_filter = request.args.get("user")
+    type_filter = request.args.get("type")
+    date_filter = request.args.get("date")
+    shift_filter = request.args.get("shift")  # <--- Nuevo
+
+    # Usamos contains_eager para cargar los datos del usuario eficientemente
+    query = Record.query.join(User).options(contains_eager(Record.user))
+
+    if user_filter:
+        query = query.filter(
+            db.or_(
+                User.employee_number.ilike(f"%{user_filter}%"),
+                User.full_name.ilike(f"%{user_filter}%")
+            )
+        )
+
+    if type_filter:
+        query = query.filter(Record.record_type == type_filter)
+
+    if date_filter:
+        query = query.filter(Record.record_date == date_filter)
+    
+    if shift_filter:  # <--- Nuevo filtro
+        query = query.filter(User.shift == shift_filter)
+
+    records = query.order_by(Record.record_time.desc()).all()
+
+    return render_template("checador/reports.html", records=records)
+
+@app.route("/user_check_in_reports/export")
+@login_required
+def export_excel():
+
+    user_filter = request.args.get("user")
+    type_filter = request.args.get("type")
+    date_filter = request.args.get("date")
+    shift_filter = request.args.get("shift")  # 🆕 Capturar shift
+
+    query = Record.query.join(User)
+
+    # 🔎 FILTRO USER
+    if user_filter:
+        query = query.filter(
+            db.or_(
+                User.employee_number.ilike(f"%{user_filter}%"),
+                User.full_name.ilike(f"%{user_filter}%")
+            )
+        )
+
+    # 🔽 FILTRO TYPE
+    if type_filter in ["checkin", "checkout"]:
+        query = query.filter(Record.record_type == type_filter)
+
+    # 📅 FILTRO DATE
+    if date_filter:
+        query = query.filter(Record.record_date == date_filter)
+
+    # 🕒 FILTRO SHIFT (NUEVO)
+    if shift_filter:
+        query = query.filter(User.shift == shift_filter)
+
+    records = query.order_by(Record.record_time.desc()).all()
+
+    data = []
+    for r in records:
+        data.append({
+            "Employee": r.employee_number,
+            "Name": r.user.full_name,
+            "Type": r.record_type.upper(), # .upper() para que se vea más limpio en Excel
+            "Shift": r.user.shift if r.user.shift else "N/A", # 🆕 Nueva columna
+            "Time": r.record_time.replace(tzinfo=None) if r.record_time else "", # Evita errores de zona horaria en Excel
+            "Date": r.record_date
+        })
+
+    df = pd.DataFrame(data)
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Report")
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name=f"report_attendance_{date.today()}.xlsx", # Nombre dinámico con fecha
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 # RUN SERVER
 # =========================
 if __name__ == "__main__":
