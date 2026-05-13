@@ -9,7 +9,8 @@ import os
 import json
 import secrets
 from sqlalchemy import or_
-
+import time
+import threading
 
 from controllers.rack_monitor import get_server_data
 from controllers.user import get_all_users, toggle_user_status, create_user
@@ -91,8 +92,7 @@ def login_required(f):
     wrapper.__name__ = f.__name__
     return wrapper
 
-import time
-import threading
+
 
 CACHE = {
     "ts": 0,
