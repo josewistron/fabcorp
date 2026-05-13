@@ -168,7 +168,7 @@ def logout():
 @login_required
 def rack_monitor():
 
-    data = get_server_data()
+    data = get_cached_index()
 
     bay_options = ["Bay 1", "Bay 2", "Bay 3"]
     rack_numbers = list(range(1, 11))
